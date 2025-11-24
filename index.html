@@ -180,12 +180,12 @@
 
       </div>
 
-      <!-- TRAINEE ATTEMPT (simple version) -->
+      <!-- TRAINEE ATTEMPT -->
       <div id="traineePanel" class="card" style="display:none;">
         <h2>Trainee – Practice Capture</h2>
         <div class="muted">This will save your answers to the backend for scoring and review.</div>
 
-        <label>Deed ID (for now enter one assigned by trainer)</label>
+        <label>Deed ID</label>
         <input id="attemptDeedId" />
 
         <label>Grantor</label>
@@ -217,37 +217,27 @@
   </div>
 
   <script>
-    // 🔗 LIVE BACKEND URL
     const API_BASE = "https://firstfocus-deed-training-system1.onrender.com";
 
     let currentUser = null;
     let authToken = null;
 
     function showAppArea() {
-      document.getElementById('loginCard').style.display = 'block';
-      document.getElementById('appArea').style.display = 'block';
-
       document.getElementById('loginCard').style.display = 'none';
-      if (!currentUser) return;
+      document.getElementById('appArea').style.display = 'block';
 
       document.getElementById('dashUsername').textContent = currentUser.username;
       document.getElementById('dashRole').textContent = currentUser.role;
       document.getElementById('userInfo').innerHTML =
         'Logged in as <strong>' + currentUser.username + '</strong>';
 
-      // role-based panels
       if (currentUser.role === 'admin' || currentUser.role === 'trainer') {
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('uploadPanel').style.display = 'block';
-      } else {
-        document.getElementById('adminPanel').style.display = 'none';
-        document.getElementById('uploadPanel').style.display = 'none';
       }
 
       if (currentUser.role === 'trainee' || currentUser.role === 'trainer' || currentUser.role === 'admin') {
         document.getElementById('traineePanel').style.display = 'block';
-      } else {
-        document.getElementById('traineePanel').style.display = 'none';
       }
     }
 
@@ -330,7 +320,8 @@
           statusEl.textContent = data.error || 'Error creating user';
           return;
         }
-        statusEl.textContent = 'User "' + data.user.username + '" created with role ' + data.user.role;
+        statusEl.textContent =
+          'User "' + data.user.username + '" created with role ' + data.user.role;
         document.getElementById('newUser').value = '';
         document.getElementById('newPass').value = '';
       } catch (err) {
@@ -349,6 +340,7 @@
         statusEl.textContent = 'Select a PDF file first.';
         return;
       }
+
       if (!authToken) {
         statusEl.textContent = 'Not authenticated – please log in again.';
         return;
@@ -447,4 +439,3 @@
   </script>
 </body>
 </html>
-
