@@ -223,6 +223,10 @@
             <div class="muted" id="currentDeedInfo" style="margin-top:6px;">
               No deed loaded yet.
             </div>
+            <div class="muted" id="pdfLinkRow" style="margin-top:4px; display:none;">
+              Open PDF in new tab:
+              <a id="pdfDirectLink" href="#" target="_blank" rel="noopener noreferrer">Click here</a>
+            </div>
           </div>
 
           <!-- FORM – BASIC + COUNTY + RECORDING TOGETHER -->
@@ -284,6 +288,7 @@
   </div>
 
   <script>
+    // IMPORTANT: Backend URL on Render
     const API_BASE = "https://firstfocus-deed-training-system1.onrender.com";
 
     let currentUser = null;
@@ -312,3 +317,417 @@
 
       const adminPanel = document.getElementById('adminPanel');
       const uploadPanel = document.getElementById('uploadPanel');
+      const traineePanel = document.getElementById('traineePanel');
+
+      adminPanel.style.display = 'none';
+      uploadPanel.style.display = 'none';
+      traineePanel.style.display = 'none';
+
+      if (currentUser.role === 'admin') {
+        adminPanel.style.display = 'block';
+        uploadPanel.style.display = 'block';
+        traineePanel.style.display = 'block';
+      } else if (currentUser.role === 'trainer') {
+        uploadPanel.style.display = 'block';
+        traineePanel.style.display = 'block';
+      } else if (currentUser.role === 'trainee') {
+        traineePanel.style.display = 'block';
+      }
+
+      // Automatically load first deed for trainee or trainer
+      if (currentUser.role === 'trainee' || currentUser.role === 'trainer') {
+        getNextDeed();
+      }
+    }
+
+    function showLoginOnly() {
+      document.getElementById('loginCard').style.display = 'block';
+      document.getElementById('appArea').style.display = 'none';
+      document.getElementById('userInfo').textContent = '';
+    }
+
+    async function loginUser() {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      if (!username || !password) {
+        alert('Enter username & password');
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE + "/api/auth/login", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Login failed');
+          return;
+        }
+
+        currentUser = data.user;
+        authToken = data.token;
+
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        localStorage.setItem('authToken', authToken);
+
+        showAppArea();
+      } catch (err) {
+        console.error(err);
+        alert('Network error');
+      }
+    }
+
+    function logout() {
+      currentUser = null;
+      authToken = null;
+      currentDeedId = null;
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
+      showLoginOnly();
+    }
+
+    async function createUserFromAdmin() {
+      const u = document.getElementById('newUser').value.trim();
+      const p = document.getElementById('newPass').value.trim();
+      const role = document.getElementById('newRole').value;
+      const statusEl = document.getElementById('userCreateStatus');
+
+      if (!u || !p) {
+        statusEl.textContent = 'Enter username and password';
+        return;
+      }
+
+      if (!authToken) {
+        statusEl.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE + "/api/users", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authToken
+          },
+          credentials: 'include',
+          body: JSON.stringify({ username: u, password: p, role })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = data.error || 'Error creating user';
+          return;
+        }
+        statusEl.textContent =
+          'User "' + data.user.username + '" created with role ' + data.user.role;
+        document.getElementById('newUser').value = '';
+        document.getElementById('newPass').value = '';
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Network error';
+      }
+    }
+
+    async function uploadDeedToBackend() {
+      const fileInput = document.getElementById('deedUploadInput');
+      const file = fileInput.files[0];
+      const statusEl = document.getElementById('uploadStatus');
+      statusEl.textContent = '';
+
+      if (!file) {
+        statusEl.textContent = 'Select a PDF file first.';
+        return;
+      }
+
+      const rec = document.getElementById('recordingDate').value.trim();
+      const dat = document.getElementById('datedDate').value.trim();
+
+      if (!isValidDateMMDDYYYY(rec) || !isValidDateMMDDYYYY(dat)) {
+        statusEl.textContent = 'Please enter dates as MM/DD/YYYY (e.g., 11/24/2025).';
+        return;
+      }
+
+      if (!authToken) {
+        statusEl.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('deed', file);
+      formData.append('document_type', document.getElementById('docType').value);
+      formData.append('grantor', document.getElementById('grantor').value);
+      formData.append('grantee', document.getElementById('grantee').value);
+      formData.append('recording_date', rec);
+      formData.append('dated_date', dat);
+
+      try {
+        const res = await fetch(API_BASE + "/api/deeds/upload", {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Authorization': 'Bearer ' + authToken
+          },
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = data.error || 'Upload failed';
+          return;
+        }
+        statusEl.textContent = 'Deed uploaded with ID ' + data.deed.id;
+        fileInput.value = '';
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Network error';
+      }
+    }
+
+    async function uploadZipOfDeeds() {
+      const fileInput = document.getElementById('zipUploadInput');
+      const file = fileInput.files[0];
+      const statusEl = document.getElementById('zipUploadStatus');
+      statusEl.textContent = '';
+
+      if (!file) {
+        statusEl.textContent = 'Select a ZIP file first.';
+        return;
+      }
+
+      if (!authToken) {
+        statusEl.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('zip', file);
+
+      try {
+        const res = await fetch(API_BASE + "/api/deeds/upload-zip", {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Authorization': 'Bearer ' + authToken
+          },
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = data.error || 'ZIP upload failed';
+          return;
+        }
+        statusEl.textContent =
+          'Uploaded ' + data.count + ' deeds from ZIP.';
+        fileInput.value = '';
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Network error while uploading ZIP';
+      }
+    }
+
+    async function getNextDeed() {
+      const statusEl = document.getElementById('attemptStatus');
+      const infoEl = document.getElementById('currentDeedInfo');
+      const viewer = document.getElementById('deedViewer');
+      const hint = document.getElementById('viewerHint');
+      const linkRow = document.getElementById('pdfLinkRow');
+
+      statusEl.textContent = '';
+      infoEl.textContent = '';
+      hint.textContent = 'Loading next deed...';
+      if (linkRow) linkRow.style.display = 'none';
+      viewer.src = '';
+
+      if (!authToken) {
+        statusEl.textContent = 'Not authenticated – please log in again.';
+        hint.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE + "/api/deeds/next", {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer ' + authToken
+          },
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = data.error || 'No more deeds available';
+          hint.textContent = data.error || 'No more deeds available.';
+          currentDeedId = null;
+          infoEl.textContent = 'No deed loaded.';
+          return;
+        }
+
+        const deed = data.deed;
+        currentDeedId = deed.id;
+
+        infoEl.textContent =
+          'Current Deed: ID ' + deed.id +
+          (deed.filename ? ' (' + deed.filename + ')' : '');
+
+        await loadDeedForAttempt(deed.id, deed.filepath);
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Network error while fetching next deed';
+        hint.textContent = 'Network error while fetching next deed.';
+      }
+    }
+
+    async function loadDeedForAttempt(deedId, knownFilepath) {
+      const viewer = document.getElementById('deedViewer');
+      const hint = document.getElementById('viewerHint');
+      const linkRow = document.getElementById('pdfLinkRow');
+      const linkEl = document.getElementById('pdfDirectLink');
+
+      if (!authToken) {
+        hint.textContent = 'Not authenticated – please log in again.';
+        viewer.src = '';
+        if (linkRow) linkRow.style.display = 'none';
+        return;
+      }
+
+      try {
+        let filepath = knownFilepath;
+
+        // If we weren't given filepath, load deed details first
+        if (!filepath) {
+          const res = await fetch(API_BASE + "/api/deeds/" + deedId, {
+            headers: { 'Authorization': 'Bearer ' + authToken },
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            hint.textContent = data.error || 'Could not load deed';
+            viewer.src = '';
+            if (linkRow) linkRow.style.display = 'none';
+            return;
+          }
+          filepath = data.deed.filepath;
+        }
+
+        if (!filepath) {
+          hint.textContent = 'No PDF file path stored for this deed.';
+          viewer.src = '';
+          if (linkRow) linkRow.style.display = 'none';
+          return;
+        }
+
+        // Build the URL we expect for the PDF
+        const pdfUrl = API_BASE + "/uploads/deeds/" + filepath;
+
+        // Test the URL first to avoid a blank iframe
+        const headRes = await fetch(pdfUrl, { method: 'GET' });
+        if (!headRes.ok) {
+          hint.textContent =
+            'Could not load PDF (HTTP ' + headRes.status + '). URL: ' + pdfUrl;
+          viewer.src = '';
+          if (linkRow) linkRow.style.display = 'none';
+          return;
+        }
+
+        // If ok, show in iframe and expose direct link
+        viewer.src = pdfUrl;
+        hint.textContent = 'Showing Deed ID ' + deedId + ' PDF.';
+        if (linkRow && linkEl) {
+          linkEl.href = pdfUrl;
+          linkRow.style.display = 'block';
+        }
+      } catch (err) {
+        console.error(err);
+        hint.textContent = 'Network error while loading deed.';
+        viewer.src = '';
+        if (linkRow) linkRow.style.display = 'none';
+      }
+    }
+
+    async function submitSimpleAttempt() {
+      const statusEl = document.getElementById('attemptStatus');
+      statusEl.textContent = '';
+
+      if (!authToken) {
+        statusEl.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
+
+      if (!currentDeedId) {
+        statusEl.textContent = 'No deed loaded. Click “Next Deed” to start.';
+        return;
+      }
+
+      const rec = document.getElementById('attemptRecordingDate').value.trim();
+      const dat = document.getElementById('attemptDatedDate').value.trim();
+
+      if (!isValidDateMMDDYYYY(rec) || !isValidDateMMDDYYYY(dat)) {
+        statusEl.textContent = 'Please enter dates as MM/DD/YYYY (e.g., 11/24/2025).';
+        return;
+      }
+
+      const body = {
+        deed_id: currentDeedId,
+        grantor: document.getElementById('attemptGrantor').value,
+        grantee: document.getElementById('attemptGrantee').value,
+        recording_date: rec,
+        dated_date: dat,
+        document_type: document.getElementById('attemptDocType').value,
+        county_name: document.getElementById('countyName').value,
+        county_state: document.getElementById('countyState').value,
+        apn: document.getElementById('apn').value,
+        recording_book: document.getElementById('recordingBook').value,
+        recording_page: document.getElementById('recordingPage').value,
+        instrument_number: document.getElementById('instrumentNumber').value,
+        time_taken_seconds: 0,
+        feedback: null
+      };
+
+      try {
+        const res = await fetch(API_BASE + "/api/attempts", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authToken
+          },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = data.error || 'Failed to save attempt';
+          return;
+        }
+
+        const score = data.score ?? (data.attempt && data.attempt.total_score);
+        const fb = data.feedback || (data.attempt && data.attempt.feedback) || '';
+
+        statusEl.textContent =
+          (typeof score === 'number'
+            ? `Score: ${score}/100. `
+            : '') +
+          (fb ? fb : 'Attempt saved. When ready, click “Next Deed” to continue.');
+
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Network error';
+      }
+    }
+
+    // Auto-login if token stored
+    (function init() {
+      const storedUser = localStorage.getItem('currentUser');
+      const storedToken = localStorage.getItem('authToken');
+      if (storedUser && storedToken) {
+        try {
+          currentUser = JSON.parse(storedUser);
+          authToken = storedToken;
+          showAppArea();
+        } catch {
+          // ignore parse errors
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
