@@ -7,7 +7,7 @@
   <style>
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, sans-serif;
       background: #f3f4f6;
       color: #111827;
     }
@@ -16,12 +16,8 @@
       color: white;
       padding: 12px 18px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 18px;
+      align-items: center;
     }
     .wrap {
       max-width: 1100px;
@@ -31,687 +27,247 @@
     .card {
       background: white;
       border-radius: 12px;
-      padding: 16px 18px;
-      box-shadow: 0 8px 20px rgba(15,23,42,0.08);
-      margin-bottom: 16px;
-    }
-    .card h2 {
-      margin-top: 0;
-      font-size: 18px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      margin-bottom: 18px;
     }
     label {
-      display: block;
       margin-top: 8px;
+      display: block;
       font-size: 14px;
       color: #374151;
     }
     input, select {
       width: 100%;
-      box-sizing: border-box;
-      padding: 8px 10px;
+      padding: 8px;
       margin-top: 4px;
       border-radius: 8px;
       border: 1px solid #d1d5db;
-      font-size: 14px;
     }
     button {
-      border: 0;
-      border-radius: 999px;
-      padding: 8px 16px;
-      font-size: 14px;
-      cursor: pointer;
+      margin-top: 12px;
+      padding: 8px 14px;
       background: #2563eb;
       color: white;
-      margin-top: 12px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
     }
-    button.secondary {
-      background: #6b7280;
-    }
+    .secondary { background: #6b7280; }
     .row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
-    @media (max-width: 900px) {
-      .row {
-        grid-template-columns: 1fr;
-      }
+    @media(max-width:900px){ .row{grid-template-columns:1fr;} }
+    .muted { font-size: 13px; color:#6b7280; }
+    .section-label{ font-size:15px;font-weight:600;margin-top:12px; }
+    .viewer-box {
+      background:#f9fafb;
+      border:1px solid #d1d5db;
+      min-height:160px;
+      padding:10px;
+      border-radius:8px;
+      font-size:14px;
+      color:#374151;
     }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      background: #e5e7eb;
-      color: #374151;
-      margin-left: 8px;
-    }
-    .muted {
-      color: #6b7280;
-      font-size: 13px;
-    }
-    hr {
-      border: 0;
-      border-top: 1px solid #e5e7eb;
-      margin: 12px 0;
-    }
-    iframe {
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      background: #111827;
-      width: 100%;
-      height: 480px;
-    }
-    .section-label {
-      margin-top: 12px;
-      font-weight: 600;
-      font-size: 14px;
-      color: #111827;
-    }
+    a.pdf-link { color:#0ea5e9; text-decoration:underline; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Deed Training Platform</h1>
-    <div id="userInfo" class="muted"></div>
-  </header>
+<header>
+  <h1>Deed Training Platform</h1>
+  <div id="userInfo" class="muted"></div>
+</header>
 
-  <div class="wrap">
+<div class="wrap">
 
-    <!-- LOGIN CARD -->
-    <div id="loginCard" class="card">
-      <h2>Login</h2>
-      <label>Username</label>
-      <input id="loginUsername" />
+  <!-- LOGIN -->
+  <div id="loginCard" class="card">
+    <h2>Login</h2>
+    <label>Username</label>
+    <input id="loginUsername">
 
-      <label>Password</label>
-      <input id="loginPassword" type="password" />
+    <label>Password</label>
+    <input id="loginPassword" type="password">
 
-      <button onclick="loginUser()">Login</button>
-      <div class="muted" style="margin-top:8px;">Ask admin to create your account.</div>
-    </div>
-
-    <!-- MAIN APP WRAPPER -->
-    <div id="appArea" style="display:none;">
-
-      <!-- DASHBOARD / ROLE INFO -->
-      <div class="card">
-        <h2>Welcome <span id="dashUsername"></span>
-          <span id="dashRole" class="badge"></span>
-        </h2>
-        <div id="dashStats" class="muted">You are now connected to the live backend.</div>
-        <button class="secondary" onclick="logout()">Logout</button>
-      </div>
-
-      <div class="row">
-
-        <!-- ADMIN PANEL -->
-        <div id="adminPanel" class="card" style="display:none;">
-          <h2>Admin – Create User</h2>
-          <label>New Username</label>
-          <input id="newUser" />
-
-          <label>New Password</label>
-          <input id="newPass" type="password" />
-
-          <label>Role</label>
-          <select id="newRole">
-            <option value="trainee">Trainee</option>
-            <option value="trainer">Trainer</option>
-            <option value="admin">Admin</option>
-          </select>
-
-          <button onclick="createUserFromAdmin()">Create User</button>
-          <div id="userCreateStatus" class="muted" style="margin-top:8px;"></div>
-        </div>
-
-        <!-- DEED UPLOAD (ADMIN / TRAINER) -->
-        <div id="uploadPanel" class="card" style="display:none;">
-          <h2>Upload Deed (PDF)</h2>
-          <label>Select Deed PDF (single)</label>
-          <input type="file" id="deedUploadInput" accept="application/pdf" />
-
-          <label>Document Type</label>
-          <select id="docType">
-            <option value="">Select</option>
-            <option>Warranty Deed</option>
-            <option>Quitclaim Deed</option>
-            <option>Deed of Trust</option>
-            <option>Grant Deed</option>
-          </select>
-
-          <label>Grantor</label>
-          <input id="grantor" />
-
-          <label>Grantee</label>
-          <input id="grantee" />
-
-          <label>Recording Date (MM/DD/YYYY)</label>
-          <input id="recordingDate" placeholder="MM/DD/YYYY" />
-
-          <label>Dated Date (MM/DD/YYYY)</label>
-          <input id="datedDate" placeholder="MM/DD/YYYY" />
-
-          <button onclick="uploadDeedToBackend()">Upload & Save Deed</button>
-          <div id="uploadStatus" class="muted" style="margin-top:8px;"></div>
-
-          <hr />
-
-          <h3 style="margin-top:8px;font-size:16px;">Upload ZIP (Multiple Deeds)</h3>
-          <label>Select ZIP file containing many PDFs</label>
-          <input type="file" id="zipUploadInput" accept=".zip,application/zip" />
-
-          <button onclick="uploadZipOfDeeds()">Upload ZIP of Deeds</button>
-          <div id="zipUploadStatus" class="muted" style="margin-top:8px;"></div>
-        </div>
-
-      </div>
-
-      <!-- TRAINEE ATTEMPT WITH VIEWER + INLINE FIELDS -->
-      <div id="traineePanel" class="card" style="display:none;">
-        <h2>Trainee – Practice Capture</h2>
-        <div class="muted">View the deed on the left and type the information on the right.</div>
-
-        <div class="row" style="margin-top:12px; align-items:flex-start;">
-          <!-- PDF VIEWER -->
-          <div>
-            <h3 style="margin-top:0;font-size:16px;">Deed Document</h3>
-            <iframe id="deedViewer"></iframe>
-            <div class="muted" id="viewerHint" style="margin-top:6px;">
-              First deed will load automatically. After you finish, click “Next Deed” to continue.
-            </div>
-            <div class="muted" id="currentDeedInfo" style="margin-top:6px;">
-              No deed loaded yet.
-            </div>
-            <div class="muted" id="pdfLinkRow" style="margin-top:4px; display:none;">
-              Open PDF in new tab:
-              <a id="pdfDirectLink" href="#" target="_blank" rel="noopener noreferrer">Click here</a>
-            </div>
-          </div>
-
-          <!-- FORM – BASIC + COUNTY + RECORDING TOGETHER -->
-          <div>
-            <div class="section-label">Basic Info</div>
-
-            <label>Grantor</label>
-            <input id="attemptGrantor" />
-
-            <label>Grantee</label>
-            <input id="attemptGrantee" />
-
-            <label>Recording Date (MM/DD/YYYY)</label>
-            <input id="attemptRecordingDate" placeholder="MM/DD/YYYY" />
-
-            <label>Dated Date (MM/DD/YYYY)</label>
-            <input id="attemptDatedDate" placeholder="MM/DD/YYYY" />
-
-            <label>Document Type</label>
-            <select id="attemptDocType">
-              <option value="">Select</option>
-              <option>Warranty Deed</option>
-              <option>Quitclaim Deed</option>
-              <option>Deed of Trust</option>
-              <option>Grant Deed</option>
-            </select>
-
-            <div class="section-label">County Info</div>
-
-            <label>County Name</label>
-            <input id="countyName" />
-
-            <label>County State</label>
-            <input id="countyState" />
-
-            <label>APN (Assessor Parcel Number)</label>
-            <input id="apn" />
-
-            <div class="section-label">Recording Info</div>
-
-            <label>Recording Book</label>
-            <input id="recordingBook" />
-
-            <label>Recording Page</label>
-            <input id="recordingPage" />
-
-            <label>Instrument Number</label>
-            <input id="instrumentNumber" />
-
-            <button onclick="submitSimpleAttempt()">Submit Attempt</button>
-            <div id="attemptStatus" class="muted" style="margin-top:8px;"></div>
-          </div>
-        </div>
-
-        <button style="margin-top:12px;" onclick="getNextDeed()">Next Deed</button>
-      </div>
-
-    </div>
+    <button onclick="loginUser()">Login</button>
   </div>
 
-  <script>
-    // IMPORTANT: Backend URL on Render
-    const API_BASE = "https://firstfocus-deed-training-system1.onrender.com";
+  <!-- MAIN APP -->
+  <div id="appArea" style="display:none;">
+    <div class="card">
+      <h2>Welcome <span id="dashUsername"></span> <span id="dashRole" class="muted"></span></h2>
+      <button class="secondary" onclick="logout()">Logout</button>
+    </div>
 
-    let currentUser = null;
-    let authToken = null;
-    let currentDeedId = null;
+    <div class="row">
+      <!-- ADMIN ONLY -->
+      <div id="adminPanel" class="card" style="display:none;">
+        <h3>Create User (Admin)</h3>
+        <label>Username</label>
+        <input id="newUser">
+        <label>Password</label>
+        <input id="newPass" type="password">
+        <label>Role</label>
+        <select id="newRole">
+          <option value="trainee">Trainee</option>
+          <option value="trainer">Trainer</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button onclick="createUserFromAdmin()">Create</button>
+        <div id="userCreateStatus" class="muted"></div>
+      </div>
 
-    function isValidDateMMDDYYYY(str) {
-      if (!str) return true; // allow blank
-      const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(str.trim());
-      if (!m) return false;
-      const mm = parseInt(m[1], 10);
-      const dd = parseInt(m[2], 10);
-      const yyyy = parseInt(m[3], 10);
-      const d = new Date(yyyy, mm - 1, dd);
-      return d.getFullYear() === yyyy && d.getMonth() === mm - 1 && d.getDate() === dd;
-    }
+      <!-- ADMIN + TRAINER -->
+      <div id="uploadPanel" class="card" style="display:none;">
+        <h3>Upload Deeds</h3>
+        <input type="file" id="deedUploadInput" accept="application/pdf">
+        <button onclick="uploadDeedToBackend()">Upload Single PDF</button>
+        <div id="uploadStatus" class="muted"></div>
+        <hr>
+        <input type="file" id="zipUploadInput" accept=".zip">
+        <button onclick="uploadZipOfDeeds()">Upload ZIP of PDFs</button>
+        <div id="zipUploadStatus" class="muted"></div>
+      </div>
+    </div>
 
-    function showAppArea() {
-      document.getElementById('loginCard').style.display = 'none';
-      document.getElementById('appArea').style.display = 'block';
+    <!-- TRAINEE -->
+    <div id="traineePanel" class="card" style="display:none;">
+      <h3>Trainee Capture</h3>
 
-      document.getElementById('dashUsername').textContent = currentUser.username;
-      document.getElementById('dashRole').textContent = currentUser.role;
-      document.getElementById('userInfo').innerHTML =
-        'Logged in as <strong>' + currentUser.username + '</strong>';
+      <div class="row">
+        <div>
+          <div class="section-label">Deed Viewer</div>
+          <div id="deedViewer" class="viewer-box">No deed loaded yet</div>
+          <div id="viewerHint" class="muted"></div>
 
-      const adminPanel = document.getElementById('adminPanel');
-      const uploadPanel = document.getElementById('uploadPanel');
-      const traineePanel = document.getElementById('traineePanel');
+          <div id="pdfLinkRow" class="muted" style="margin-top:6px; display:none;">
+            Open PDF: <a id="pdfDirectLink" class="pdf-link" href="#" target="_blank">Click here</a>
+          </div>
+        </div>
 
-      adminPanel.style.display = 'none';
-      uploadPanel.style.display = 'none';
-      traineePanel.style.display = 'none';
+        <div>
+          <div class="section-label">Fields</div>
+          <label>Grantor</label><input id="attemptGrantor">
+          <label>Grantee</label><input id="attemptGrantee">
+          <label>Recording Date</label><input id="attemptRecordingDate">
+          <label>Dated Date</label><input id="attemptDatedDate">
+          <label>Document Type</label><input id="attemptDocType">
+          <label>County Name</label><input id="countyName">
+          <label>County State</label><input id="countyState">
+          <label>APN</label><input id="apn">
+          <label>Recording Book</label><input id="recordingBook">
+          <label>Recording Page</label><input id="recordingPage">
+          <label>Instrument Number</label><input id="instrumentNumber">
+          <button onclick="submitSimpleAttempt()">Submit Attempt</button>
+          <div id="attemptStatus" class="muted"></div>
+        </div>
+      </div>
 
-      if (currentUser.role === 'admin') {
-        adminPanel.style.display = 'block';
-        uploadPanel.style.display = 'block';
-        traineePanel.style.display = 'block';
-      } else if (currentUser.role === 'trainer') {
-        uploadPanel.style.display = 'block';
-        traineePanel.style.display = 'block';
-      } else if (currentUser.role === 'trainee') {
-        traineePanel.style.display = 'block';
-      }
+      <button onclick="getNextDeed()">Next Deed</button>
+    </div>
+  </div>
+</div>
 
-      // Automatically load first deed for trainee or trainer
-      if (currentUser.role === 'trainee' || currentUser.role === 'trainer') {
-        getNextDeed();
-      }
-    }
+<script>
+const API_BASE = "https://firstfocus-deed-training-system1.onrender.com";
+let authToken=null,currentUser=null,currentDeedId=null;
 
-    function showLoginOnly() {
-      document.getElementById('loginCard').style.display = 'block';
-      document.getElementById('appArea').style.display = 'none';
-      document.getElementById('userInfo').textContent = '';
-    }
+function showUI(){
+ document.getElementById("loginCard").style.display="none";
+ document.getElementById("appArea").style.display="block";
+ document.getElementById("dashUsername").textContent=currentUser.username;
+ document.getElementById("dashRole").textContent=currentUser.role;
+ document.getElementById("userInfo").textContent=`Logged in as ${currentUser.username}`;
 
-    async function loginUser() {
-      const username = document.getElementById('loginUsername').value.trim();
-      const password = document.getElementById('loginPassword').value.trim();
-      if (!username || !password) {
-        alert('Enter username & password');
-        return;
-      }
+ const admin=document.getElementById("adminPanel");
+ const upload=document.getElementById("uploadPanel");
+ const trainee=document.getElementById("traineePanel");
 
-      try {
-        const res = await fetch(API_BASE + "/api/auth/login", {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          alert(data.error || 'Login failed');
-          return;
-        }
+ admin.style.display=upload.style.display=trainee.style.display="none";
+ if(currentUser.role==="admin"){admin.style.display=upload.style.display=trainee.style.display="block"}
+ else if(currentUser.role==="trainer"){upload.style.display=trainee.style.display="block"}
+ else trainee.style.display="block";
 
-        currentUser = data.user;
-        authToken = data.token;
-
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        localStorage.setItem('authToken', authToken);
-
-        showAppArea();
-      } catch (err) {
-        console.error(err);
-        alert('Network error');
-      }
-    }
-
-    function logout() {
-      currentUser = null;
-      authToken = null;
-      currentDeedId = null;
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('authToken');
-      showLoginOnly();
-    }
-
-    async function createUserFromAdmin() {
-      const u = document.getElementById('newUser').value.trim();
-      const p = document.getElementById('newPass').value.trim();
-      const role = document.getElementById('newRole').value;
-      const statusEl = document.getElementById('userCreateStatus');
-
-      if (!u || !p) {
-        statusEl.textContent = 'Enter username and password';
-        return;
-      }
-
-      if (!authToken) {
-        statusEl.textContent = 'Not authenticated – please log in again.';
-        return;
-      }
-
-      try {
-        const res = await fetch(API_BASE + "/api/users", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + authToken
-          },
-          credentials: 'include',
-          body: JSON.stringify({ username: u, password: p, role })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          statusEl.textContent = data.error || 'Error creating user';
-          return;
-        }
-        statusEl.textContent =
-          'User "' + data.user.username + '" created with role ' + data.user.role;
-        document.getElementById('newUser').value = '';
-        document.getElementById('newPass').value = '';
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Network error';
-      }
-    }
-
-    async function uploadDeedToBackend() {
-      const fileInput = document.getElementById('deedUploadInput');
-      const file = fileInput.files[0];
-      const statusEl = document.getElementById('uploadStatus');
-      statusEl.textContent = '';
-
-      if (!file) {
-        statusEl.textContent = 'Select a PDF file first.';
-        return;
-      }
-
-      const rec = document.getElementById('recordingDate').value.trim();
-      const dat = document.getElementById('datedDate').value.trim();
-
-      if (!isValidDateMMDDYYYY(rec) || !isValidDateMMDDYYYY(dat)) {
-        statusEl.textContent = 'Please enter dates as MM/DD/YYYY (e.g., 11/24/2025).';
-        return;
-      }
-
-      if (!authToken) {
-        statusEl.textContent = 'Not authenticated – please log in again.';
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('deed', file);
-      formData.append('document_type', document.getElementById('docType').value);
-      formData.append('grantor', document.getElementById('grantor').value);
-      formData.append('grantee', document.getElementById('grantee').value);
-      formData.append('recording_date', rec);
-      formData.append('dated_date', dat);
-
-      try {
-        const res = await fetch(API_BASE + "/api/deeds/upload", {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Authorization': 'Bearer ' + authToken
-          },
-          body: formData
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          statusEl.textContent = data.error || 'Upload failed';
-          return;
-        }
-        statusEl.textContent = 'Deed uploaded with ID ' + data.deed.id;
-        fileInput.value = '';
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Network error';
-      }
-    }
-
-    async function uploadZipOfDeeds() {
-      const fileInput = document.getElementById('zipUploadInput');
-      const file = fileInput.files[0];
-      const statusEl = document.getElementById('zipUploadStatus');
-      statusEl.textContent = '';
-
-      if (!file) {
-        statusEl.textContent = 'Select a ZIP file first.';
-        return;
-      }
-
-      if (!authToken) {
-        statusEl.textContent = 'Not authenticated – please log in again.';
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('zip', file);
-
-      try {
-        const res = await fetch(API_BASE + "/api/deeds/upload-zip", {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Authorization': 'Bearer ' + authToken
-          },
-          body: formData
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          statusEl.textContent = data.error || 'ZIP upload failed';
-          return;
-        }
-        statusEl.textContent =
-          'Uploaded ' + data.count + ' deeds from ZIP.';
-        fileInput.value = '';
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Network error while uploading ZIP';
-      }
-    }
-
-    async function getNextDeed() {
-      const statusEl = document.getElementById('attemptStatus');
-      const infoEl = document.getElementById('currentDeedInfo');
-      const viewer = document.getElementById('deedViewer');
-      const hint = document.getElementById('viewerHint');
-      const linkRow = document.getElementById('pdfLinkRow');
-
-      statusEl.textContent = '';
-      infoEl.textContent = '';
-      hint.textContent = 'Loading next deed...';
-      if (linkRow) linkRow.style.display = 'none';
-      viewer.src = '';
-
-      if (!authToken) {
-        statusEl.textContent = 'Not authenticated – please log in again.';
-        hint.textContent = 'Not authenticated – please log in again.';
-        return;
-      }
-
-      try {
-        const res = await fetch(API_BASE + "/api/deeds/next", {
-          method: 'GET',
-          headers: {
-            'Authorization': 'Bearer ' + authToken
-          },
-          credentials: 'include'
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          statusEl.textContent = data.error || 'No more deeds available';
-          hint.textContent = data.error || 'No more deeds available.';
-          currentDeedId = null;
-          infoEl.textContent = 'No deed loaded.';
-          return;
-        }
-
-        const deed = data.deed;
-        currentDeedId = deed.id;
-
-        infoEl.textContent =
-          'Current Deed: ID ' + deed.id +
-          (deed.filename ? ' (' + deed.filename + ')' : '');
-
-        await loadDeedForAttempt(deed.id);
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Network error while fetching next deed';
-        hint.textContent = 'Network error while fetching next deed.';
-      }
-    }
-
-    // 🚩 UPDATED: use /api/deeds/:id/file instead of /uploads/...
-    async function loadDeedForAttempt(deedId) {
-  const viewer = document.getElementById('deedViewer');
-  const hint = document.getElementById('viewerHint');
-  const linkRow = document.getElementById('pdfLinkRow');
-  const linkEl = document.getElementById('pdfDirectLink');
-
-  if (!authToken) {
-    hint.textContent = 'Not authenticated – please log in again.';
-    viewer.textContent = 'Not authenticated – please log in again.';
-    if (linkRow) linkRow.style.display = 'none';
-    return;
-  }
-
-  if (!deedId) {
-    hint.textContent = 'No deed ID to load.';
-    viewer.textContent = 'No deed ID to load.';
-    if (linkRow) linkRow.style.display = 'none';
-    return;
-  }
-
-  try {
-    // 👇 include the JWT in the URL so the new tab is authenticated
-    const pdfUrl =
-      API_BASE + "/api/deeds/" + deedId + "/file?token=" + encodeURIComponent(authToken);
-
-    // Test that the file exists
-    const testRes = await fetch(pdfUrl, { method: "GET" });
-    if (!testRes.ok) {
-      hint.textContent =
-        "Could not load PDF (HTTP " + testRes.status + "). URL: " + pdfUrl;
-      viewer.textContent = "Could not load PDF. See message above.";
-      if (linkRow) linkRow.style.display = "none";
-      return;
-    }
-
-    viewer.textContent = "PDF is ready. Use the link below to open it in a new tab.";
-    hint.textContent = "Showing Deed ID " + deedId + " PDF (new tab link below).";
-
-    if (linkRow && linkEl) {
-      linkEl.href = pdfUrl;
-      linkRow.style.display = "inline";
-    }
-  } catch (err) {
-    console.error(err);
-    hint.textContent = "Network error while loading deed.";
-    viewer.textContent = "Network error while loading deed.";
-    if (linkRow) linkRow.style.display = "none";
-  }
+ if(currentUser.role!=="admin") getNextDeed();
 }
 
-    async function submitSimpleAttempt() {
-      const statusEl = document.getElementById('attemptStatus');
-      statusEl.textContent = '';
+async function loginUser(){
+ const u=document.getElementById("loginUsername").value.trim();
+ const p=document.getElementById("loginPassword").value.trim();
+ const r=await fetch(API_BASE+"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
+ const d=await r.json();
+ if(!r.ok) return alert(d.error);
+ currentUser=d.user; authToken=d.token;
+ localStorage.setItem("currentUser",JSON.stringify(currentUser));
+ localStorage.setItem("authToken",authToken);
+ showUI();
+}
 
-      if (!authToken) {
-        statusEl.textContent = 'Not authenticated – please log in again.';
-        return;
-      }
+function logout(){
+ localStorage.clear(); location.reload();
+}
 
-      if (!currentDeedId) {
-        statusEl.textContent = 'No deed loaded. Click “Next Deed” to start.';
-        return;
-      }
+async function createUserFromAdmin(){
+ const u=document.getElementById("newUser").value.trim();
+ const p=document.getElementById("newPass").value.trim();
+ const role=document.getElementById("newRole").value;
+ const s=document.getElementById("userCreateStatus");
+ s.textContent="";
+ const r=await fetch(API_BASE+"/api/users",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authToken},body:JSON.stringify({username:u,password:p,role})});
+ const d=await r.json();
+ s.textContent=r.ok?"User created":"Error: "+d.error;
+}
 
-      const rec = document.getElementById('attemptRecordingDate').value.trim();
-      const dat = document.getElementById('attemptDatedDate').value.trim();
+async function uploadDeedToBackend(){
+ const f=document.getElementById("deedUploadInput").files[0];
+ const s=document.getElementById("uploadStatus");
+ if(!f) return s.textContent="Select PDF";
+ const fd=new FormData(); fd.append("deed",f);
+ const r=await fetch(API_BASE+"/api/deeds/upload",{method:"POST",headers:{"Authorization":"Bearer "+authToken},body:fd});
+ const d=await r.json(); s.textContent=r.ok?"Deed ID "+d.deed.id:"Error";
+}
 
-      if (!isValidDateMMDDYYYY(rec) || !isValidDateMMDDYYYY(dat)) {
-        statusEl.textContent = 'Please enter dates as MM/DD/YYYY (e.g., 11/24/2025).';
-        return;
-      }
+async function uploadZipOfDeeds(){
+ const f=document.getElementById("zipUploadInput").files[0];
+ const s=document.getElementById("zipUploadStatus");
+ if(!f) return s.textContent="Select ZIP";
+ const fd=new FormData(); fd.append("zip",f);
+ const r=await fetch(API_BASE+"/api/deeds/upload-zip",{method:"POST",headers:{"Authorization":"Bearer "+authToken},body:fd});
+ const d=await r.json(); s.textContent=r.ok?`Uploaded ${d.count}`:"Error";
+}
 
-      const body = {
-        deed_id: currentDeedId,
-        grantor: document.getElementById('attemptGrantor').value,
-        grantee: document.getElementById('attemptGrantee').value,
-        recording_date: rec,
-        dated_date: dat,
-        document_type: document.getElementById('attemptDocType').value,
-        county_name: document.getElementById('countyName').value,
-        county_state: document.getElementById('countyState').value,
-        apn: document.getElementById('apn').value,
-        recording_book: document.getElementById('recordingBook').value,
-        recording_page: document.getElementById('recordingPage').value,
-        instrument_number: document.getElementById('instrumentNumber').value,
-        time_taken_seconds: 0,
-        feedback: null
-      };
+async function getNextDeed(){
+ const h=document.getElementById("viewerHint");
+ h.textContent="Loading..."
+ const r=await fetch(API_BASE+"/api/deeds/next",{headers:{"Authorization":"Bearer "+authToken}});
+ const d=await r.json();
+ if(!r.ok) return h.textContent=d.error;
+ currentDeedId=d.deed.id;
+ document.getElementById("deedViewer").textContent="PDF Ready Below ↓";
+ loadPDF();
+}
 
-      try {
-        const res = await fetch(API_BASE + "/api/attempts", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + authToken
-          },
-          credentials: 'include',
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          statusEl.textContent = data.error || 'Failed to save attempt';
-          return;
-        }
+async function loadPDF(){
+ const h=document.getElementById("viewerHint");
+ const row=document.getElementById("pdfLinkRow");
+ const a=document.getElementById("pdfDirectLink");
+ if(!currentDeedId) return;
 
-        const score = data.score ?? (data.attempt && data.attempt.total_score);
-        const fb = data.feedback || (data.attempt && data.attempt.feedback) || '';
+ const url=`${API_BASE}/api/deeds/${currentDeedId}/file?token=${encodeURIComponent(authToken)}`;
+ const test=await fetch(url); if(!test.ok) return h.textContent="PDF not found";
+ h.textContent="PDF Loaded";
+ row.style.display="block"; a.href=url;
+}
 
-        statusEl.textContent =
-          (typeof score === 'number'
-            ? `Score: ${score}/100. `
-            : '') +
-          (fb ? fb : 'Attempt saved. When ready, click “Next Deed” to continue.');
-
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Network error';
-      }
-    }
-
-    // Auto-login if token stored
-    (function init() {
-      const storedUser = localStorage.getItem('currentUser');
-      const storedToken = localStorage.getItem('authToken');
-      if (storedUser && storedToken) {
-        try {
-          currentUser = JSON.parse(storedUser);
-          authToken = storedToken;
-          showAppArea();
-        } catch {
-          // ignore parse errors
-        }
-      }
-    })();
-  </script>
+async function submitSimpleAttempt(){
+ const s=document.getElementById("attemptStatus");
+ const body={deed_id:currentDeedId};
+ const r=await fetch(API_BASE+"/api/attempts",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authToken},body:JSON.stringify(body)});
+ s.textContent=r.ok?"Saved":"Error"; 
+}
+(function(){let u=localStorage.getItem("currentUser");let t=localStorage.getItem("authToken");if(u&&t){currentUser=JSON.parse(u);authToken=t;showUI()}})();
+</script>
 </body>
 </html>
