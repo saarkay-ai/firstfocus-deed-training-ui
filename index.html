@@ -617,7 +617,8 @@
         }
 
         // Build the URL we expect for the PDF
-        const pdfUrl = API_BASE + "/uploads/deeds/" + filepath;
+        const pdfUrl = API_BASE + "/uploads/" + filepath;
+
 
         // Test the URL first to avoid a blank iframe
         const headRes = await fetch(pdfUrl, { method: 'GET' });
