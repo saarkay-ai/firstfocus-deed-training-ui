@@ -119,4 +119,23 @@
 <body>
   <header>
     <h1>Deed Training Platform</h1>
-    <div id="
+    <div id="userInfo" class="muted"></div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- LOGIN CARD -->
+    <div id="loginCard" class="card">
+      <h2>Login</h2>
+      <label>Username</label>
+      <input id="loginUsername" />
+
+      <label>Password</label>
+      <input id="loginPassword" type="password" />
+
+      <button onclick="loginUser()">Login</button>
+      <div id="loginStatus" class="muted" style="margin-top:8px;"></div>
+      <div class="muted" style="margin-top:4px;">Ask admin to create your account.</div>
+    </div>
+
+    <!-- MAIN APP WRAPPER
