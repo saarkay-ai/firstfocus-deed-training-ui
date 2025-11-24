@@ -578,52 +578,55 @@
     }
 
     // 🚩 UPDATED: use /api/deeds/:id/file instead of /uploads/...
-    async function loadDeedForAttempt(deedId, knownFilepath) {
-      const viewer = document.getElementById('deedViewer');
-      const hint = document.getElementById('viewerHint');
-      const linkRow = document.getElementById('pdfLinkRow');
-      const linkEl = document.getElementById('pdfDirectLink');
+    async function loadDeedForAttempt(deedId) {
+  const viewer = document.getElementById('deedViewer');
+  const hint = document.getElementById('viewerHint');
+  const linkRow = document.getElementById('pdfLinkRow');
+  const linkEl = document.getElementById('pdfDirectLink');
 
-      if (!authToken) {
-        hint.textContent = 'Not authenticated – please log in again.';
-        viewer.src = '';
-        if (linkRow) linkRow.style.display = 'none';
-        return;
-      }
+  if (!authToken) {
+    hint.textContent = 'Not authenticated – please log in again.';
+    viewer.textContent = 'Not authenticated – please log in again.';
+    if (linkRow) linkRow.style.display = 'none';
+    return;
+  }
 
-      if (!deedId) {
-        hint.textContent = 'No deed ID to load.';
-        viewer.src = '';
-        if (linkRow) linkRow.style.display = 'none';
-        return;
-      }
+  if (!deedId) {
+    hint.textContent = 'No deed ID to load.';
+    viewer.textContent = 'No deed ID to load.';
+    if (linkRow) linkRow.style.display = 'none';
+    return;
+  }
 
-      try {
-        const pdfUrl = API_BASE + "/api/deeds/" + deedId + "/file";
+  try {
+    // 👇 include the JWT in the URL so the new tab is authenticated
+    const pdfUrl =
+      API_BASE + "/api/deeds/" + deedId + "/file?token=" + encodeURIComponent(authToken);
 
-        // Optional: test so we can show a clear error
-        const testRes = await fetch(pdfUrl, { method: "GET" });
-        if (!testRes.ok) {
-          hint.textContent =
-            "Could not load PDF (HTTP " + testRes.status + "). URL: " + pdfUrl;
-          viewer.src = "";
-          if (linkRow) linkRow.style.display = "none";
-          return;
-        }
-
-        viewer.src = pdfUrl;
-        hint.textContent = "Showing Deed ID " + deedId + " PDF.";
-        if (linkRow && linkEl) {
-          linkEl.href = pdfUrl;
-          linkRow.style.display = "block";
-        }
-      } catch (err) {
-        console.error(err);
-        hint.textContent = "Network error while loading deed.";
-        viewer.src = "";
-        if (linkRow) linkRow.style.display = "none";
-      }
+    // Test that the file exists
+    const testRes = await fetch(pdfUrl, { method: "GET" });
+    if (!testRes.ok) {
+      hint.textContent =
+        "Could not load PDF (HTTP " + testRes.status + "). URL: " + pdfUrl;
+      viewer.textContent = "Could not load PDF. See message above.";
+      if (linkRow) linkRow.style.display = "none";
+      return;
     }
+
+    viewer.textContent = "PDF is ready. Use the link below to open it in a new tab.";
+    hint.textContent = "Showing Deed ID " + deedId + " PDF (new tab link below).";
+
+    if (linkRow && linkEl) {
+      linkEl.href = pdfUrl;
+      linkRow.style.display = "inline";
+    }
+  } catch (err) {
+    console.error(err);
+    hint.textContent = "Network error while loading deed.";
+    viewer.textContent = "Network error while loading deed.";
+    if (linkRow) linkRow.style.display = "none";
+  }
+}
 
     async function submitSimpleAttempt() {
       const statusEl = document.getElementById('attemptStatus');
