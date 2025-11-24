@@ -138,4 +138,570 @@
       <div class="muted" style="margin-top:4px;">Ask admin to create your account.</div>
     </div>
 
-    <!-- MAIN APP WRAPPER
+    <!-- MAIN APP WRAPPER -->
+    <div id="appArea" style="display:none;">
+
+      <!-- DASHBOARD / ROLE INFO -->
+      <div class="card">
+        <h2>Welcome <span id="dashUsername"></span>
+          <span id="dashRole" class="badge"></span>
+        </h2>
+        <div class="muted" id="dashStats">You are connected to the live backend.</div>
+        <button class="secondary" onclick="logout()">Logout</button>
+      </div>
+
+      <div class="row">
+
+        <!-- ADMIN PANEL -->
+        <div id="adminPanel" class="card" style="display:none;">
+          <h3>Admin – Create User</h3>
+          <label>New Username</label>
+          <input id="newUser" />
+
+          <label>New Password</label>
+          <input id="newPass" type="password" />
+
+          <label>Role</label>
+          <select id="newRole">
+            <option value="trainee">Trainee</option>
+            <option value="trainer">Trainer</option>
+            <option value="admin">Admin</option>
+          </select>
+
+          <button onclick="createUserFromAdmin()">Create User</button>
+          <div id="userCreateStatus" class="muted" style="margin-top:8px;"></div>
+        </div>
+
+        <!-- DEED UPLOAD (ADMIN / TRAINER) -->
+        <div id="uploadPanel" class="card" style="display:none;">
+          <h3>Upload Deeds</h3>
+
+          <label>Single Deed PDF</label>
+          <input type="file" id="deedUploadInput" accept="application/pdf" />
+          <button onclick="uploadDeedToBackend()">Upload Single PDF</button>
+          <div id="uploadStatus" class="muted" style="margin-top:8px;"></div>
+
+          <hr />
+
+          <label>ZIP of Many Deeds (PDFs)</label>
+          <input type="file" id="zipUploadInput" accept=".zip,application/zip" />
+          <button onclick="uploadZipOfDeeds()">Upload ZIP of Deeds</button>
+          <div id="zipUploadStatus" class="muted" style="margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <!-- TRAINEE ATTEMPT -->
+      <div id="traineePanel" class="card" style="display:none;">
+        <h3>Trainee – Practice Capture</h3>
+        <div class="muted">Click “Next Deed” to start. Open the PDF in a new tab and type the details.</div>
+
+        <div class="row" style="margin-top:12px; align-items:flex-start;">
+          <!-- VIEWER SIDE -->
+          <div>
+            <div class="section-label">Deed Document</div>
+            <div id="deedViewer" class="viewer-box">
+              No deed loaded yet. Click “Next Deed”.
+            </div>
+            <div id="viewerHint" class="muted" style="margin-top:6px;"></div>
+
+            <div id="pdfLinkRow" class="muted" style="margin-top:8px; display:none;">
+              Open PDF in new tab:
+              <a id="pdfDirectLink" class="pdf-link" href="#" target="_blank" rel="noopener noreferrer">Click here</a>
+            </div>
+          </div>
+
+          <!-- FORM SIDE -->
+          <div>
+            <div class="section-label">Captured Fields</div>
+
+            <label>Grantor</label>
+            <input id="attemptGrantor" />
+
+            <label>Grantee</label>
+            <input id="attemptGrantee" />
+
+            <label>Recording Date</label>
+            <input id="attemptRecordingDate" placeholder="MM/DD/YYYY or as on deed" />
+
+            <label>Dated Date</label>
+            <input id="attemptDatedDate" placeholder="MM/DD/YYYY or as on deed" />
+
+            <label>Document Type</label>
+            <input id="attemptDocType" placeholder="Warranty Deed / Grant Deed / ..." />
+
+            <div class="section-label">County Info</div>
+
+            <label>County Name</label>
+            <input id="countyName" />
+
+            <label>County State</label>
+            <input id="countyState" />
+
+            <label>APN</label>
+            <input id="apn" />
+
+            <div class="section-label">Recording Info</div>
+
+            <label>Recording Book</label>
+            <input id="recordingBook" />
+
+            <label>Recording Page</label>
+            <input id="recordingPage" />
+
+            <label>Instrument Number</label>
+            <input id="instrumentNumber" />
+
+            <button onclick="submitSimpleAttempt()">Submit Attempt</button>
+            <div id="attemptStatus" class="muted" style="margin-top:8px;"></div>
+          </div>
+        </div>
+
+        <button style="margin-top:12px;" onclick="getNextDeed()">Next Deed</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var API_BASE = "https://firstfocus-deed-training-system1.onrender.com";
+
+    var authToken = null;
+    var currentUser = null;
+    var currentDeedId = null;
+
+    function $(id) {
+      return document.getElementById(id);
+    }
+
+    function showUI() {
+      $("loginCard").style.display = "none";
+      $("appArea").style.display = "block";
+
+      $("dashUsername").textContent = currentUser.username;
+      $("dashRole").textContent = currentUser.role;
+      $("userInfo").textContent = "Logged in as " + currentUser.username;
+
+      var adminPanel = $("adminPanel");
+      var uploadPanel = $("uploadPanel");
+      var traineePanel = $("traineePanel");
+
+      adminPanel.style.display = "none";
+      uploadPanel.style.display = "none";
+      traineePanel.style.display = "none";
+
+      if (currentUser.role === "admin") {
+        adminPanel.style.display = "block";
+        uploadPanel.style.display = "block";
+        traineePanel.style.display = "block";
+      } else if (currentUser.role === "trainer") {
+        uploadPanel.style.display = "block";
+        traineePanel.style.display = "block";
+      } else if (currentUser.role === "trainee") {
+        traineePanel.style.display = "block";
+      }
+
+      if (currentUser.role === "trainer" || currentUser.role === "trainee") {
+        getNextDeed();
+      }
+    }
+
+    function loginUser() {
+      var username = $("loginUsername").value.trim();
+      var password = $("loginPassword").value.trim();
+      var statusEl = $("loginStatus");
+      statusEl.textContent = "";
+
+      if (!username || !password) {
+        statusEl.textContent = "Enter username and password.";
+        return;
+      }
+
+      statusEl.textContent = "Logging in...";
+
+      fetch(API_BASE + "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username: username, password: password })
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, status: res.status, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            var msg = (result.data && result.data.error) ? result.data.error : "Login failed";
+            statusEl.textContent = "Login error (" + result.status + "): " + msg;
+            return;
+          }
+
+          currentUser = result.data.user;
+          authToken = result.data.token;
+
+          localStorage.setItem("currentUser", JSON.stringify(currentUser));
+          localStorage.setItem("authToken", authToken);
+
+          statusEl.textContent = "Login successful. Loading app...";
+          showUI();
+        })
+        .catch(function (err) {
+          console.error(err);
+          statusEl.textContent = "Network error during login.";
+        });
+    }
+
+    function logout() {
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("authToken");
+      currentUser = null;
+      authToken = null;
+      currentDeedId = null;
+      location.reload();
+    }
+
+    function createUserFromAdmin() {
+      var u = $("newUser").value.trim();
+      var p = $("newPass").value.trim();
+      var role = $("newRole").value;
+      var statusEl = $("userCreateStatus");
+      statusEl.textContent = "";
+
+      if (!u || !p) {
+        statusEl.textContent = "Enter username and password";
+        return;
+      }
+      if (!authToken) {
+        statusEl.textContent = "Not authenticated";
+        return;
+      }
+
+      fetch(API_BASE + "/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + authToken
+        },
+        credentials: "include",
+        body: JSON.stringify({ username: u, password: p, role: role })
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            statusEl.textContent = (result.data && result.data.error) ? result.data.error : "Error creating user";
+            return;
+          }
+          statusEl.textContent = 'User "' + result.data.user.username +
+            '" created with role ' + result.data.user.role;
+          $("newUser").value = "";
+          $("newPass").value = "";
+        })
+        .catch(function (err) {
+          console.error(err);
+          statusEl.textContent = "Network error";
+        });
+    }
+
+    function uploadDeedToBackend() {
+      var fileInput = $("deedUploadInput");
+      var file = fileInput.files[0];
+      var statusEl = $("uploadStatus");
+      statusEl.textContent = "";
+
+      if (!file) {
+        statusEl.textContent = "Select a PDF file first.";
+        return;
+      }
+      if (!authToken) {
+        statusEl.textContent = "Not authenticated";
+        return;
+      }
+
+      var formData = new FormData();
+      formData.append("deed", file);
+
+      fetch(API_BASE + "/api/deeds/upload", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + authToken },
+        credentials: "include",
+        body: formData
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            statusEl.textContent =
+              (result.data && result.data.error) ? result.data.error : "Upload failed";
+            return;
+          }
+          statusEl.textContent = "Deed uploaded with ID " + result.data.deed.id;
+          fileInput.value = "";
+        })
+        .catch(function (err) {
+          console.error(err);
+          statusEl.textContent = "Network error";
+        });
+    }
+
+    function uploadZipOfDeeds() {
+      var fileInput = $("zipUploadInput");
+      var file = fileInput.files[0];
+      var statusEl = $("zipUploadStatus");
+      statusEl.textContent = "";
+
+      if (!file) {
+        statusEl.textContent = "Select a ZIP file first.";
+        return;
+      }
+      if (!authToken) {
+        statusEl.textContent = "Not authenticated";
+        return;
+      }
+
+      var formData = new FormData();
+      formData.append("zip", file);
+
+      fetch(API_BASE + "/api/deeds/upload-zip", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + authToken },
+        credentials: "include",
+        body: formData
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            statusEl.textContent =
+              (result.data && result.data.error) ? result.data.error : "ZIP upload failed";
+            return;
+          }
+          statusEl.textContent = "Uploaded " + result.data.count + " deeds from ZIP.";
+          fileInput.value = "";
+        })
+        .catch(function (err) {
+          console.error(err);
+          statusEl.textContent = "Network error";
+        });
+    }
+
+    function clearAttemptForm() {
+      var ids = [
+        "attemptGrantor","attemptGrantee","attemptRecordingDate","attemptDatedDate",
+        "attemptDocType","countyName","countyState","apn",
+        "recordingBook","recordingPage","instrumentNumber"
+      ];
+      for (var i = 0; i < ids.length; i++) {
+        var el = $(ids[i]);
+        if (el) el.value = "";
+      }
+      $("attemptStatus").textContent = "";
+    }
+
+    function getNextDeed() {
+      var statusEl = $("attemptStatus");
+      var viewer = $("deedViewer");
+      var hint = $("viewerHint");
+      var linkRow = $("pdfLinkRow");
+
+      statusEl.textContent = "";
+      viewer.textContent = "Loading next deed...";
+      hint.textContent = "Loading next deed...";
+      if (linkRow) linkRow.style.display = "none";
+
+      if (!authToken) {
+        viewer.textContent = "Not authenticated – please log in again.";
+        hint.textContent = "Not authenticated – please log in again.";
+        return;
+      }
+
+      fetch(API_BASE + "/api/deeds/next", {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + authToken },
+        credentials: "include"
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            viewer.textContent =
+              (result.data && result.data.error) ? result.data.error : "No more deeds available.";
+            hint.textContent = viewer.textContent;
+            currentDeedId = null;
+            return;
+          }
+
+          var deed = result.data.deed;
+          currentDeedId = deed.id;
+
+          clearAttemptForm();
+
+          viewer.textContent = "PDF ready. Use the link below to open it in a new tab.";
+          hint.textContent =
+            "Showing Deed ID " +
+            deed.id +
+            (deed.filename ? " (" + deed.filename + ")" : "");
+
+          loadPDFForCurrentDeed();
+        })
+        .catch(function (err) {
+          console.error(err);
+          viewer.textContent = "Network error while fetching next deed.";
+          hint.textContent = "Network error while fetching next deed.";
+        });
+    }
+
+    function loadPDFForCurrentDeed() {
+      var viewer = $("deedViewer");
+      var hint = $("viewerHint");
+      var linkRow = $("pdfLinkRow");
+      var linkEl = $("pdfDirectLink");
+
+      if (!currentDeedId || !authToken) {
+        viewer.textContent = "No deed loaded.";
+        if (linkRow) linkRow.style.display = "none";
+        return;
+      }
+
+      var pdfUrl =
+        API_BASE +
+        "/api/deeds/" +
+        currentDeedId +
+        "/file?token=" +
+        encodeURIComponent(authToken);
+
+      fetch(pdfUrl, { method: "GET" })
+        .then(function (res) {
+          if (!res.ok) {
+            viewer.textContent = "Could not load PDF (HTTP " + res.status + ").";
+            hint.textContent =
+              "Could not load PDF (HTTP " + res.status + "). URL: " + pdfUrl;
+            if (linkRow) linkRow.style.display = "none";
+            return;
+          }
+
+          viewer.textContent =
+            "PDF is ready. Use the link below to open it in a new tab.";
+          hint.textContent =
+            "Showing Deed ID " + currentDeedId + " PDF (new tab link below).";
+
+          if (linkRow && linkEl) {
+            linkEl.href = pdfUrl;
+            linkRow.style.display = "inline";
+          }
+        })
+        .catch(function (err) {
+          console.error(err);
+          viewer.textContent = "Network error while loading PDF.";
+          hint.textContent = "Network error while loading PDF.";
+          if (linkRow) linkRow.style.display = "none";
+        });
+    }
+
+    function submitSimpleAttempt() {
+      var statusEl = $("attemptStatus");
+      statusEl.textContent = "";
+
+      if (!authToken) {
+        statusEl.textContent = "Not authenticated – please log in again.";
+        return;
+      }
+
+      if (!currentDeedId) {
+        statusEl.textContent = "No deed loaded. Click “Next Deed” first.";
+        return;
+      }
+
+      var body = {
+        deed_id: currentDeedId,
+        grantor: $("attemptGrantor").value,
+        grantee: $("attemptGrantee").value,
+        recording_date: $("attemptRecordingDate").value,
+        dated_date: $("attemptDatedDate").value,
+        document_type: $("attemptDocType").value,
+        county_name: $("countyName").value,
+        county_state: $("countyState").value,
+        apn: $("apn").value,
+        recording_book: $("recordingBook").value,
+        recording_page: $("recordingPage").value,
+        instrument_number: $("instrumentNumber").value,
+        time_taken_seconds: 0,
+        feedback: null
+      };
+
+      fetch(API_BASE + "/api/attempts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + authToken
+        },
+        credentials: "include",
+        body: JSON.stringify(body)
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            statusEl.textContent =
+              (result.data && result.data.error) ? result.data.error : "Failed to save attempt";
+            return;
+          }
+
+          var score =
+            (result.data && typeof result.data.score === "number")
+              ? result.data.score
+              : (result.data.attempt && result.data.attempt.total_score);
+          var fb =
+            (result.data && result.data.feedback) ||
+            (result.data.attempt && result.data.attempt.feedback) ||
+            "";
+
+          var msg = "";
+          if (typeof score === "number") {
+            msg += "Score: " + score + "/100. ";
+          }
+          if (fb) {
+            msg += fb;
+          } else {
+            msg += "Attempt saved. Loading next deed...";
+          }
+          statusEl.textContent = msg;
+
+          getNextDeed();
+        })
+        .catch(function (err) {
+          console.error(err);
+          statusEl.textContent = "Network error";
+        });
+    }
+
+    (function init() {
+      var storedUser = localStorage.getItem("currentUser");
+      var storedToken = localStorage.getItem("authToken");
+      if (storedUser && storedToken) {
+        try {
+          currentUser = JSON.parse(storedUser);
+          authToken = storedToken;
+          showUI();
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
