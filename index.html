@@ -24,7 +24,7 @@
       font-size: 18px;
     }
     .wrap {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 20px auto;
       padding: 0 12px;
     }
@@ -72,7 +72,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
-    @media (max-width: 800px) {
+    @media (max-width: 900px) {
       .row {
         grid-template-columns: 1fr;
       }
@@ -94,6 +94,36 @@
       border: 0;
       border-top: 1px solid #e5e7eb;
       margin: 12px 0;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      border-radius: 999px;
+      border: 0;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .tab-btn.active {
+      background: #2563eb;
+      color: white;
+    }
+    .tab-section {
+      display: none;
+    }
+    .tab-section.active {
+      display: block;
+    }
+    iframe {
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      background: #111827;
     }
   </style>
 </head>
@@ -194,40 +224,88 @@
 
       </div>
 
-      <!-- TRAINEE ATTEMPT -->
+      <!-- TRAINEE ATTEMPT WITH VIEWER + TABS -->
       <div id="traineePanel" class="card" style="display:none;">
         <h2>Trainee – Practice Capture</h2>
-        <div class="muted">This will save your answers to the backend for scoring and review.</div>
+        <div class="muted">View the deed on the left and type the information on the right.</div>
 
-        <button style="margin-top:8px;" onclick="getNextDeed()">Get Next Deed Automatically</button>
-        <div id="nextDeedInfo" class="muted" style="margin-top:4px; margin-bottom:8px;"></div>
+        <div class="row" style="margin-top:12px; align-items:flex-start;">
+          <!-- PDF VIEWER -->
+          <div>
+            <h3 style="margin-top:0;font-size:16px;">Deed Document</h3>
+            <iframe id="deedViewer" style="width:100%;height:480px;"></iframe>
+            <div class="muted" id="viewerHint" style="margin-top:6px;">
+              Use “Get Next Deed Automatically” or enter Deed ID below and click “Load Deed for This ID”.
+            </div>
+          </div>
 
-        <label>Deed ID</label>
-        <input id="attemptDeedId" />
+          <!-- FORM WITH TABS -->
+          <div>
+            <div class="tabs">
+              <button class="tab-btn active" id="tabBtn-basic" onclick="showFormTab('basic')">Basic Info</button>
+              <button class="tab-btn" id="tabBtn-county" onclick="showFormTab('county')">County Info</button>
+              <button class="tab-btn" id="tabBtn-recording" onclick="showFormTab('recording')">Recording Info</button>
+            </div>
 
-        <label>Grantor</label>
-        <input id="attemptGrantor" />
+            <label>Deed ID</label>
+            <input id="attemptDeedId" />
+            <button style="margin-top:6px;" onclick="loadDeedFromField()">Load Deed for This ID</button>
+            <div id="nextDeedInfo" class="muted" style="margin-top:4px; margin-bottom:8px;"></div>
 
-        <label>Grantee</label>
-        <input id="attemptGrantee" />
+            <!-- BASIC TAB -->
+            <div id="tab-basic" class="tab-section active">
+              <label>Grantor</label>
+              <input id="attemptGrantor" />
 
-        <label>Recording Date</label>
-        <input id="attemptRecordingDate" type="date" />
+              <label>Grantee</label>
+              <input id="attemptGrantee" />
 
-        <label>Dated Date</label>
-        <input id="attemptDatedDate" type="date" />
+              <label>Recording Date</label>
+              <input id="attemptRecordingDate" type="date" />
 
-        <label>Document Type</label>
-        <select id="attemptDocType">
-          <option value="">Select</option>
-          <option>Warranty Deed</option>
-          <option>Quitclaim Deed</option>
-          <option>Deed of Trust</option>
-          <option>Grant Deed</option>
-        </select>
+              <label>Dated Date</label>
+              <input id="attemptDatedDate" type="date" />
 
-        <button onclick="submitSimpleAttempt()">Submit Attempt</button>
-        <div id="attemptStatus" class="muted" style="margin-top:8px;"></div>
+              <label>Document Type</label>
+              <select id="attemptDocType">
+                <option value="">Select</option>
+                <option>Warranty Deed</option>
+                <option>Quitclaim Deed</option>
+                <option>Deed of Trust</option>
+                <option>Grant Deed</option>
+              </select>
+            </div>
+
+            <!-- COUNTY TAB -->
+            <div id="tab-county" class="tab-section">
+              <label>County Name</label>
+              <input id="countyName" />
+
+              <label>County State</label>
+              <input id="countyState" />
+
+              <label>APN (Assessor Parcel Number)</label>
+              <input id="apn" />
+            </div>
+
+            <!-- RECORDING TAB -->
+            <div id="tab-recording" class="tab-section">
+              <label>Recording Book</label>
+              <input id="recordingBook" />
+
+              <label>Recording Page</label>
+              <input id="recordingPage" />
+
+              <label>Instrument Number</label>
+              <input id="instrumentNumber" />
+            </div>
+
+            <button onclick="submitSimpleAttempt()">Submit Attempt</button>
+            <div id="attemptStatus" class="muted" style="margin-top:8px;"></div>
+          </div>
+        </div>
+
+        <button style="margin-top:12px;" onclick="getNextDeed()">Get Next Deed Automatically</button>
       </div>
 
     </div>
@@ -248,7 +326,6 @@
       document.getElementById('userInfo').innerHTML =
         'Logged in as <strong>' + currentUser.username + '</strong>';
 
-      // Reset all panels first
       const adminPanel = document.getElementById('adminPanel');
       const uploadPanel = document.getElementById('uploadPanel');
       const traineePanel = document.getElementById('traineePanel');
@@ -257,19 +334,14 @@
       uploadPanel.style.display = 'none';
       traineePanel.style.display = 'none';
 
-      // Admin: can create users + upload + practice
       if (currentUser.role === 'admin') {
         adminPanel.style.display = 'block';
         uploadPanel.style.display = 'block';
         traineePanel.style.display = 'block';
-      }
-      // Trainer: can upload + practice (no user creation)
-      else if (currentUser.role === 'trainer') {
+      } else if (currentUser.role === 'trainer') {
         uploadPanel.style.display = 'block';
         traineePanel.style.display = 'block';
-      }
-      // Trainee: only practice panel
-      else if (currentUser.role === 'trainee') {
+      } else if (currentUser.role === 'trainee') {
         traineePanel.style.display = 'block';
       }
     }
@@ -451,6 +523,20 @@
       }
     }
 
+    function showFormTab(tab) {
+      ['basic', 'county', 'recording'].forEach((t) => {
+        const section = document.getElementById('tab-' + t);
+        const btn = document.getElementById('tabBtn-' + t);
+        if (t === tab) {
+          section.classList.add('active');
+          btn.classList.add('active');
+        } else {
+          section.classList.remove('active');
+          btn.classList.remove('active');
+        }
+      });
+    }
+
     async function getNextDeed() {
       const statusEl = document.getElementById('attemptStatus');
       const infoEl = document.getElementById('nextDeedInfo');
@@ -476,14 +562,72 @@
           return;
         }
 
-        document.getElementById('attemptDeedId').value = data.deed.id;
+        const deed = data.deed;
+        document.getElementById('attemptDeedId').value = deed.id;
         infoEl.textContent =
-          'Assigned Deed ID ' + data.deed.id +
-          (data.deed.filename ? ' (' + data.deed.filename + ')' : '');
+          'Assigned Deed ID ' + deed.id +
+          (deed.filename ? ' (' + deed.filename + ')' : '');
+
+        await loadDeedForAttempt(deed.id, deed.filepath);
       } catch (err) {
         console.error(err);
         statusEl.textContent = 'Network error while fetching next deed';
       }
+    }
+
+    async function loadDeedForAttempt(deedId, knownFilepath) {
+      const viewer = document.getElementById('deedViewer');
+      const hint = document.getElementById('viewerHint');
+
+      if (!authToken) {
+        hint.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
+
+      try {
+        let filepath = knownFilepath;
+
+        if (!filepath) {
+          const res = await fetch(API_BASE + "/api/deeds/" + deedId, {
+            headers: { 'Authorization': 'Bearer ' + authToken },
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            hint.textContent = data.error || 'Could not load deed';
+            return;
+          }
+          filepath = data.deed.filepath;
+        }
+
+        if (!filepath) {
+          hint.textContent = 'No PDF file path stored for this deed.';
+          return;
+        }
+
+        const pdfUrl = API_BASE + "/uploads/deeds/" + filepath;
+        viewer.src = pdfUrl;
+        hint.textContent = 'Showing Deed ID ' + deedId + ' PDF.';
+      } catch (err) {
+        console.error(err);
+        hint.textContent = 'Network error while loading deed.';
+      }
+    }
+
+    function loadDeedFromField() {
+      const idStr = document.getElementById('attemptDeedId').value.trim();
+      const statusEl = document.getElementById('attemptStatus');
+      statusEl.textContent = '';
+      if (!idStr) {
+        statusEl.textContent = 'Enter a Deed ID first.';
+        return;
+      }
+      const deedId = parseInt(idStr, 10);
+      if (!deedId) {
+        statusEl.textContent = 'Deed ID must be a number.';
+        return;
+      }
+      loadDeedForAttempt(deedId);
     }
 
     async function submitSimpleAttempt() {
@@ -508,6 +652,12 @@
         recording_date: document.getElementById('attemptRecordingDate').value,
         dated_date: document.getElementById('attemptDatedDate').value,
         document_type: document.getElementById('attemptDocType').value,
+        county_name: document.getElementById('countyName').value,
+        county_state: document.getElementById('countyState').value,
+        apn: document.getElementById('apn').value,
+        recording_book: document.getElementById('recordingBook').value,
+        recording_page: document.getElementById('recordingPage').value,
+        instrument_number: document.getElementById('instrumentNumber').value,
         total_score: 0,
         time_taken_seconds: 0,
         feedback: null
