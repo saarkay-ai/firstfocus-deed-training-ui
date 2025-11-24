@@ -221,12 +221,15 @@
     const API_BASE = "https://firstfocus-deed-training-system1.onrender.com";
 
     let currentUser = null;
+    let authToken = null;
 
     function showAppArea() {
-      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('loginCard').style.display = 'block';
       document.getElementById('appArea').style.display = 'block';
 
+      document.getElementById('loginCard').style.display = 'none';
       if (!currentUser) return;
+
       document.getElementById('dashUsername').textContent = currentUser.username;
       document.getElementById('dashRole').textContent = currentUser.role;
       document.getElementById('userInfo').innerHTML =
@@ -236,9 +239,15 @@
       if (currentUser.role === 'admin' || currentUser.role === 'trainer') {
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('uploadPanel').style.display = 'block';
+      } else {
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('uploadPanel').style.display = 'none';
       }
+
       if (currentUser.role === 'trainee' || currentUser.role === 'trainer' || currentUser.role === 'admin') {
         document.getElementById('traineePanel').style.display = 'block';
+      } else {
+        document.getElementById('traineePanel').style.display = 'none';
       }
     }
 
@@ -268,8 +277,13 @@
           alert(data.error || 'Login failed');
           return;
         }
+
         currentUser = data.user;
+        authToken = data.token;
+
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        localStorage.setItem('authToken', authToken);
+
         showAppArea();
       } catch (err) {
         console.error(err);
@@ -279,7 +293,9 @@
 
     function logout() {
       currentUser = null;
+      authToken = null;
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
       showLoginOnly();
     }
 
@@ -294,10 +310,18 @@
         return;
       }
 
+      if (!authToken) {
+        statusEl.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
+
       try {
         const res = await fetch(API_BASE + "/api/users", {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authToken
+          },
           credentials: 'include',
           body: JSON.stringify({ username: u, password: p, role })
         });
@@ -325,6 +349,10 @@
         statusEl.textContent = 'Select a PDF file first.';
         return;
       }
+      if (!authToken) {
+        statusEl.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
 
       const formData = new FormData();
       formData.append('deed', file);
@@ -338,6 +366,9 @@
         const res = await fetch(API_BASE + "/api/deeds/upload", {
           method: 'POST',
           credentials: 'include',
+          headers: {
+            'Authorization': 'Bearer ' + authToken
+          },
           body: formData
         });
         const data = await res.json();
@@ -356,6 +387,11 @@
     async function submitSimpleAttempt() {
       const statusEl = document.getElementById('attemptStatus');
       statusEl.textContent = '';
+
+      if (!authToken) {
+        statusEl.textContent = 'Not authenticated – please log in again.';
+        return;
+      }
 
       const deedId = document.getElementById('attemptDeedId').value.trim();
       if (!deedId) {
@@ -378,7 +414,10 @@
       try {
         const res = await fetch(API_BASE + "/api/attempts", {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authToken
+          },
           credentials: 'include',
           body: JSON.stringify(body)
         });
@@ -394,12 +433,13 @@
       }
     }
 
-    // Auto-login if we have stored user
     (function init() {
-      const stored = localStorage.getItem('currentUser');
-      if (stored) {
+      const storedUser = localStorage.getItem('currentUser');
+      const storedToken = localStorage.getItem('authToken');
+      if (storedUser && storedToken) {
         try {
-          currentUser = JSON.parse(stored);
+          currentUser = JSON.parse(storedUser);
+          authToken = storedToken;
           showAppArea();
         } catch {}
       }
@@ -407,3 +447,4 @@
   </script>
 </body>
 </html>
+
