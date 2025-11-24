@@ -7,7 +7,7 @@
   <style>
     body {
       margin: 0;
-      font-family: system-ui, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #f3f4f6;
       color: #111827;
     }
@@ -16,8 +16,12 @@
       color: white;
       padding: 12px 18px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 18px;
     }
     .wrap {
       max-width: 1100px;
@@ -27,247 +31,167 @@
     .card {
       background: white;
       border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-      margin-bottom: 18px;
+      padding: 16px 18px;
+      box-shadow: 0 8px 20px rgba(15,23,42,0.08);
+      margin-bottom: 16px;
+    }
+    .card h2, .card h3 {
+      margin-top: 0;
+      font-size: 18px;
     }
     label {
-      margin-top: 8px;
       display: block;
+      margin-top: 8px;
       font-size: 14px;
       color: #374151;
     }
     input, select {
       width: 100%;
-      padding: 8px;
+      box-sizing: border-box;
+      padding: 8px 10px;
       margin-top: 4px;
       border-radius: 8px;
       border: 1px solid #d1d5db;
+      font-size: 14px;
     }
     button {
-      margin-top: 12px;
-      padding: 8px 14px;
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
       background: #2563eb;
       color: white;
-      border: 0;
-      border-radius: 8px;
-      cursor: pointer;
+      margin-top: 12px;
     }
-    .secondary { background: #6b7280; }
+    button.secondary {
+      background: #6b7280;
+    }
     .row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
     }
-    @media(max-width:900px){ .row{grid-template-columns:1fr;} }
-    .muted { font-size: 13px; color:#6b7280; }
-    .section-label{ font-size:15px;font-weight:600;margin-top:12px; }
-    .viewer-box {
-      background:#f9fafb;
-      border:1px solid #d1d5db;
-      min-height:160px;
-      padding:10px;
-      border-radius:8px;
-      font-size:14px;
-      color:#374151;
+    @media (max-width: 900px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
     }
-    a.pdf-link { color:#0ea5e9; text-decoration:underline; }
+    .muted {
+      color: #6b7280;
+      font-size: 13px;
+    }
+    hr {
+      border: 0;
+      border-top: 1px solid #e5e7eb;
+      margin: 12px 0;
+    }
+    .section-label {
+      margin-top: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #111827;
+    }
+    .viewer-box {
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      min-height: 120px;
+      padding: 10px;
+      font-size: 14px;
+      color: #374151;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #e5e7eb;
+      color: #374151;
+      margin-left: 8px;
+    }
+    a.pdf-link {
+      color: #0ea5e9;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-<header>
-  <h1>Deed Training Platform</h1>
-  <div id="userInfo" class="muted"></div>
-</header>
+  <header>
+    <h1>Deed Training Platform</h1>
+    <div id="userInfo" class="muted"></div>
+  </header>
 
-<div class="wrap">
+  <div class="wrap">
 
-  <!-- LOGIN -->
-  <div id="loginCard" class="card">
-    <h2>Login</h2>
-    <label>Username</label>
-    <input id="loginUsername">
+    <!-- LOGIN CARD -->
+    <div id="loginCard" class="card">
+      <h2>Login</h2>
+      <label>Username</label>
+      <input id="loginUsername" />
 
-    <label>Password</label>
-    <input id="loginPassword" type="password">
+      <label>Password</label>
+      <input id="loginPassword" type="password" />
 
-    <button onclick="loginUser()">Login</button>
-  </div>
-
-  <!-- MAIN APP -->
-  <div id="appArea" style="display:none;">
-    <div class="card">
-      <h2>Welcome <span id="dashUsername"></span> <span id="dashRole" class="muted"></span></h2>
-      <button class="secondary" onclick="logout()">Logout</button>
+      <button onclick="loginUser()">Login</button>
+      <div class="muted" style="margin-top:8px;">Ask admin to create your account.</div>
     </div>
 
-    <div class="row">
-      <!-- ADMIN ONLY -->
-      <div id="adminPanel" class="card" style="display:none;">
-        <h3>Create User (Admin)</h3>
-        <label>Username</label>
-        <input id="newUser">
-        <label>Password</label>
-        <input id="newPass" type="password">
-        <label>Role</label>
-        <select id="newRole">
-          <option value="trainee">Trainee</option>
-          <option value="trainer">Trainer</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button onclick="createUserFromAdmin()">Create</button>
-        <div id="userCreateStatus" class="muted"></div>
-      </div>
+    <!-- MAIN APP WRAPPER -->
+    <div id="appArea" style="display:none;">
 
-      <!-- ADMIN + TRAINER -->
-      <div id="uploadPanel" class="card" style="display:none;">
-        <h3>Upload Deeds</h3>
-        <input type="file" id="deedUploadInput" accept="application/pdf">
-        <button onclick="uploadDeedToBackend()">Upload Single PDF</button>
-        <div id="uploadStatus" class="muted"></div>
-        <hr>
-        <input type="file" id="zipUploadInput" accept=".zip">
-        <button onclick="uploadZipOfDeeds()">Upload ZIP of PDFs</button>
-        <div id="zipUploadStatus" class="muted"></div>
+      <!-- DASHBOARD / ROLE INFO -->
+      <div class="card">
+        <h2>Welcome <span id="dashUsername"></span>
+          <span id="dashRole" class="badge"></span>
+        </h2>
+        <div class="muted" id="dashStats">You are connected to the live backend.</div>
+        <button class="secondary" onclick="logout()">Logout</button>
       </div>
-    </div>
-
-    <!-- TRAINEE -->
-    <div id="traineePanel" class="card" style="display:none;">
-      <h3>Trainee Capture</h3>
 
       <div class="row">
-        <div>
-          <div class="section-label">Deed Viewer</div>
-          <div id="deedViewer" class="viewer-box">No deed loaded yet</div>
-          <div id="viewerHint" class="muted"></div>
 
-          <div id="pdfLinkRow" class="muted" style="margin-top:6px; display:none;">
-            Open PDF: <a id="pdfDirectLink" class="pdf-link" href="#" target="_blank">Click here</a>
-          </div>
+        <!-- ADMIN PANEL -->
+        <div id="adminPanel" class="card" style="display:none;">
+          <h3>Admin – Create User</h3>
+          <label>New Username</label>
+          <input id="newUser" />
+
+          <label>New Password</label>
+          <input id="newPass" type="password" />
+
+          <label>Role</label>
+          <select id="newRole">
+            <option value="trainee">Trainee</option>
+            <option value="trainer">Trainer</option>
+            <option value="admin">Admin</option>
+          </select>
+
+          <button onclick="createUserFromAdmin()">Create User</button>
+          <div id="userCreateStatus" class="muted" style="margin-top:8px;"></div>
         </div>
 
-        <div>
-          <div class="section-label">Fields</div>
-          <label>Grantor</label><input id="attemptGrantor">
-          <label>Grantee</label><input id="attemptGrantee">
-          <label>Recording Date</label><input id="attemptRecordingDate">
-          <label>Dated Date</label><input id="attemptDatedDate">
-          <label>Document Type</label><input id="attemptDocType">
-          <label>County Name</label><input id="countyName">
-          <label>County State</label><input id="countyState">
-          <label>APN</label><input id="apn">
-          <label>Recording Book</label><input id="recordingBook">
-          <label>Recording Page</label><input id="recordingPage">
-          <label>Instrument Number</label><input id="instrumentNumber">
-          <button onclick="submitSimpleAttempt()">Submit Attempt</button>
-          <div id="attemptStatus" class="muted"></div>
+        <!-- DEED UPLOAD (ADMIN / TRAINER) -->
+        <div id="uploadPanel" class="card" style="display:none;">
+          <h3>Upload Deeds</h3>
+
+          <label>Single Deed PDF</label>
+          <input type="file" id="deedUploadInput" accept="application/pdf" />
+          <button onclick="uploadDeedToBackend()">Upload Single PDF</button>
+          <div id="uploadStatus" class="muted" style="margin-top:8px;"></div>
+
+          <hr />
+
+          <label>ZIP of Many Deeds (PDFs)</label>
+          <input type="file" id="zipUploadInput" accept=".zip,application/zip" />
+          <button onclick="uploadZipOfDeeds()">Upload ZIP of Deeds</button>
+          <div id="zipUploadStatus" class="muted" style="margin-top:8px;"></div>
         </div>
       </div>
 
-      <button onclick="getNextDeed()">Next Deed</button>
-    </div>
-  </div>
-</div>
+      <!-- TRAINEE ATTEMPT -->
+      <div id="traineePanel" class="card" style="display:none;">
+        <h3>Trainee – Practice Capture</h3>
+        <div class="muted">Click “Next Deed” to start. Open the PDF in a new tab and type the details.</div>
 
-<script>
-const API_BASE = "https://firstfocus-deed-training-system1.onrender.com";
-let authToken=null,currentUser=null,currentDeedId=null;
-
-function showUI(){
- document.getElementById("loginCard").style.display="none";
- document.getElementById("appArea").style.display="block";
- document.getElementById("dashUsername").textContent=currentUser.username;
- document.getElementById("dashRole").textContent=currentUser.role;
- document.getElementById("userInfo").textContent=`Logged in as ${currentUser.username}`;
-
- const admin=document.getElementById("adminPanel");
- const upload=document.getElementById("uploadPanel");
- const trainee=document.getElementById("traineePanel");
-
- admin.style.display=upload.style.display=trainee.style.display="none";
- if(currentUser.role==="admin"){admin.style.display=upload.style.display=trainee.style.display="block"}
- else if(currentUser.role==="trainer"){upload.style.display=trainee.style.display="block"}
- else trainee.style.display="block";
-
- if(currentUser.role!=="admin") getNextDeed();
-}
-
-async function loginUser(){
- const u=document.getElementById("loginUsername").value.trim();
- const p=document.getElementById("loginPassword").value.trim();
- const r=await fetch(API_BASE+"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u,password:p})});
- const d=await r.json();
- if(!r.ok) return alert(d.error);
- currentUser=d.user; authToken=d.token;
- localStorage.setItem("currentUser",JSON.stringify(currentUser));
- localStorage.setItem("authToken",authToken);
- showUI();
-}
-
-function logout(){
- localStorage.clear(); location.reload();
-}
-
-async function createUserFromAdmin(){
- const u=document.getElementById("newUser").value.trim();
- const p=document.getElementById("newPass").value.trim();
- const role=document.getElementById("newRole").value;
- const s=document.getElementById("userCreateStatus");
- s.textContent="";
- const r=await fetch(API_BASE+"/api/users",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authToken},body:JSON.stringify({username:u,password:p,role})});
- const d=await r.json();
- s.textContent=r.ok?"User created":"Error: "+d.error;
-}
-
-async function uploadDeedToBackend(){
- const f=document.getElementById("deedUploadInput").files[0];
- const s=document.getElementById("uploadStatus");
- if(!f) return s.textContent="Select PDF";
- const fd=new FormData(); fd.append("deed",f);
- const r=await fetch(API_BASE+"/api/deeds/upload",{method:"POST",headers:{"Authorization":"Bearer "+authToken},body:fd});
- const d=await r.json(); s.textContent=r.ok?"Deed ID "+d.deed.id:"Error";
-}
-
-async function uploadZipOfDeeds(){
- const f=document.getElementById("zipUploadInput").files[0];
- const s=document.getElementById("zipUploadStatus");
- if(!f) return s.textContent="Select ZIP";
- const fd=new FormData(); fd.append("zip",f);
- const r=await fetch(API_BASE+"/api/deeds/upload-zip",{method:"POST",headers:{"Authorization":"Bearer "+authToken},body:fd});
- const d=await r.json(); s.textContent=r.ok?`Uploaded ${d.count}`:"Error";
-}
-
-async function getNextDeed(){
- const h=document.getElementById("viewerHint");
- h.textContent="Loading..."
- const r=await fetch(API_BASE+"/api/deeds/next",{headers:{"Authorization":"Bearer "+authToken}});
- const d=await r.json();
- if(!r.ok) return h.textContent=d.error;
- currentDeedId=d.deed.id;
- document.getElementById("deedViewer").textContent="PDF Ready Below ↓";
- loadPDF();
-}
-
-async function loadPDF(){
- const h=document.getElementById("viewerHint");
- const row=document.getElementById("pdfLinkRow");
- const a=document.getElementById("pdfDirectLink");
- if(!currentDeedId) return;
-
- const url=`${API_BASE}/api/deeds/${currentDeedId}/file?token=${encodeURIComponent(authToken)}`;
- const test=await fetch(url); if(!test.ok) return h.textContent="PDF not found";
- h.textContent="PDF Loaded";
- row.style.display="block"; a.href=url;
-}
-
-async function submitSimpleAttempt(){
- const s=document.getElementById("attemptStatus");
- const body={deed_id:currentDeedId};
- const r=await fetch(API_BASE+"/api/attempts",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+authToken},body:JSON.stringify(body)});
- s.textContent=r.ok?"Saved":"Error"; 
-}
-(function(){let u=localStorage.getItem("currentUser");let t=localStorage.getItem("authToken");if(u&&t){currentUser=JSON.parse(u);authToken=t;showUI()}})();
-</script>
-</body>
-</html>
+        <div class="row
