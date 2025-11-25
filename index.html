@@ -639,54 +639,71 @@
     }
 
     function loadPDFForCurrentDeed() {
-      var viewer = $("deedViewer");
-      var hint = $("viewerHint");
-      var linkRow = $("pdfLinkRow");
-      var linkEl = $("pdfDirectLink");
+  var viewer = $("deedViewer");
+  var hint = $("viewerHint");
+  var linkRow = $("pdfLinkRow");
+  var linkEl = $("pdfDirectLink");
 
-      if (!currentDeedId || !authToken) {
-        viewer.textContent = "No deed loaded.";
+  if (!currentDeedId || !authToken) {
+    viewer.textContent = "No deed loaded.";
+    if (linkRow) linkRow.style.display = "none";
+    return;
+  }
+
+  // 1) Load deed details (to get filepath)
+  fetch(API_BASE + "/api/deeds/" + currentDeedId, {
+    method: "GET",
+    headers: { "Authorization": "Bearer " + authToken },
+    credentials: "include"
+  })
+    .then(function (res) {
+      return res.json().then(function (data) {
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    })
+    .then(function (result) {
+      if (!result.ok) {
+        viewer.textContent =
+          "Could not load deed details (HTTP " + result.status + ").";
+        hint.textContent =
+          (result.data && result.data.error)
+            ? result.data.error
+            : "Failed to load deed.";
         if (linkRow) linkRow.style.display = "none";
         return;
       }
 
-      var pdfUrl = API_BASE + "/api/deeds/" + currentDeedId + "/file";
-
-      fetch(pdfUrl, {
-        method: "GET",
-        headers: { "Authorization": "Bearer " + authToken },
-        credentials: "include"
-      })
-      .then(function(res) {
-        if (!res.ok) {
-          viewer.textContent = "Could not load PDF (HTTP " + res.status + ").";
-          hint.textContent =
-            "Could not load PDF (HTTP " + res.status + ").";
-          if (linkRow) linkRow.style.display = "none";
-          return;
-        }
-        return res.blob();
-      })
-      .then(function(blob) {
-        if (!blob) return;
-        var url = URL.createObjectURL(blob);
-        viewer.textContent =
-          "PDF is ready. Use the link below to open it in a new tab.";
-        hint.textContent =
-          "Showing Deed ID " + currentDeedId + " PDF (new tab link below).";
-
-        if (linkRow && linkEl) {
-          linkEl.href = url;
-          linkRow.style.display = "inline";
-        }
-      })
-      .catch(function(err) {
-        console.error(err);
-        viewer.textContent = "Network error while loading PDF.";
-        hint.textContent = "Network error while loading PDF.";
+      var deed = result.data.deed;
+      if (!deed || !deed.filepath) {
+        viewer.textContent = "This deed does not have a PDF file path stored.";
+        hint.textContent = "Ask admin to re-upload this deed’s PDF.";
         if (linkRow) linkRow.style.display = "none";
-      });
-    }
+        return;
+      }
+
+      // 2) Build direct static URL to the PDF
+      var pdfUrl = API_BASE + "/uploads/" + deed.filepath;
+
+      viewer.textContent =
+        "PDF is ready. Use the link below to open it in a new tab.";
+      hint.textContent =
+        "Showing Deed ID " + deed.id +
+        (deed.filename ? " (" + deed.filename + ")" : "") +
+        " (new tab link below).";
+
+      if (linkRow && linkEl) {
+        linkEl.href = pdfUrl;
+        linkRow.style.display = "inline";
+      }
+    })
+    .catch(function (err) {
+      console.error(err);
+      viewer.textContent = "Network error while loading deed.";
+      hint.textContent = "Network error while loading deed.";
+      if (linkRow) linkRow.style.display = "none";
+    });
+}
+
 
     function submitSimpleAttempt() {
       var statusEl = $("attemptStatus");
