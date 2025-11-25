@@ -187,6 +187,19 @@
           <input type="file" id="zipUploadInput" accept=".zip,application/zip" />
           <button onclick="uploadZipOfDeeds()">Upload ZIP of Deeds</button>
           <div id="zipUploadStatus" class="muted" style="margin-top:8px;"></div>
+
+          <hr />
+
+          <h3>Metadata Template (Excel)</h3>
+          <div class="muted" style="margin-bottom:6px;">
+            1) Upload PDFs/ZIP first. 2) Download template. 3) Fill truth data. 4) Upload template.
+          </div>
+          <button onclick="downloadMetadataTemplate()">Download Template (.xlsx)</button>
+
+          <label style="margin-top:8px;">Upload Filled Template (.xlsx)</label>
+          <input type="file" id="metaFileInput" accept=".xlsx" />
+          <button onclick="uploadMetadataTemplate()">Upload Metadata</button>
+          <div id="metaStatus" class="muted" style="margin-top:8px;"></div>
         </div>
       </div>
 
@@ -323,31 +336,31 @@
         credentials: "include",
         body: JSON.stringify({ username: username, password: password })
       })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, status: res.status, data: data };
-          });
-        })
-        .then(function (result) {
-          if (!result.ok) {
-            var msg = (result.data && result.data.error) ? result.data.error : "Login failed";
-            statusEl.textContent = "Login error (" + result.status + "): " + msg;
-            return;
-          }
-
-          currentUser = result.data.user;
-          authToken = result.data.token;
-
-          localStorage.setItem("currentUser", JSON.stringify(currentUser));
-          localStorage.setItem("authToken", authToken);
-
-          statusEl.textContent = "Login successful. Loading app...";
-          showUI();
-        })
-        .catch(function (err) {
-          console.error(err);
-          statusEl.textContent = "Network error during login.";
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, status: res.status, data: data };
         });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          var msg = (result.data && result.data.error) ? result.data.error : "Login failed";
+          statusEl.textContent = "Login error (" + result.status + "): " + msg;
+          return;
+        }
+
+        currentUser = result.data.user;
+        authToken = result.data.token;
+
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        localStorage.setItem("authToken", authToken);
+
+        statusEl.textContent = "Login successful. Loading app...";
+        showUI();
+      })
+      .catch(function(err) {
+        console.error(err);
+        statusEl.textContent = "Network error during login.";
+      });
     }
 
     function logout() {
@@ -384,25 +397,26 @@
         credentials: "include",
         body: JSON.stringify({ username: u, password: p, role: role })
       })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
-        })
-        .then(function (result) {
-          if (!result.ok) {
-            statusEl.textContent = (result.data && result.data.error) ? result.data.error : "Error creating user";
-            return;
-          }
-          statusEl.textContent = 'User "' + result.data.user.username +
-            '" created with role ' + result.data.user.role;
-          $("newUser").value = "";
-          $("newPass").value = "";
-        })
-        .catch(function (err) {
-          console.error(err);
-          statusEl.textContent = "Network error";
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
         });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          statusEl.textContent =
+            (result.data && result.data.error) ? result.data.error : "Error creating user";
+          return;
+        }
+        statusEl.textContent =
+          'User "' + result.data.user.username + '" created with role ' + result.data.user.role;
+        $("newUser").value = "";
+        $("newPass").value = "";
+      })
+      .catch(function(err) {
+        console.error(err);
+        statusEl.textContent = "Network error";
+      });
     }
 
     function uploadDeedToBackend() {
@@ -429,24 +443,24 @@
         credentials: "include",
         body: formData
       })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
-        })
-        .then(function (result) {
-          if (!result.ok) {
-            statusEl.textContent =
-              (result.data && result.data.error) ? result.data.error : "Upload failed";
-            return;
-          }
-          statusEl.textContent = "Deed uploaded with ID " + result.data.deed.id;
-          fileInput.value = "";
-        })
-        .catch(function (err) {
-          console.error(err);
-          statusEl.textContent = "Network error";
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
         });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          statusEl.textContent =
+            (result.data && result.data.error) ? result.data.error : "Upload failed";
+          return;
+        }
+        statusEl.textContent = "Deed uploaded with ID " + result.data.deed.id;
+        fileInput.value = "";
+      })
+      .catch(function(err) {
+        console.error(err);
+        statusEl.textContent = "Network error";
+      });
     }
 
     function uploadZipOfDeeds() {
@@ -473,24 +487,86 @@
         credentials: "include",
         body: formData
       })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
-        })
-        .then(function (result) {
-          if (!result.ok) {
-            statusEl.textContent =
-              (result.data && result.data.error) ? result.data.error : "ZIP upload failed";
-            return;
-          }
-          statusEl.textContent = "Uploaded " + result.data.count + " deeds from ZIP.";
-          fileInput.value = "";
-        })
-        .catch(function (err) {
-          console.error(err);
-          statusEl.textContent = "Network error";
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
         });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          statusEl.textContent =
+            (result.data && result.data.error) ? result.data.error : "ZIP upload failed";
+          return;
+        }
+        statusEl.textContent = "Uploaded " + result.data.count + " deeds from ZIP.";
+        fileInput.value = "";
+      })
+      .catch(function(err) {
+        console.error(err);
+        statusEl.textContent = "Network error";
+      });
+    }
+
+    function downloadMetadataTemplate() {
+      var statusEl = $("metaStatus");
+      statusEl.textContent = "";
+      if (!authToken) {
+        statusEl.textContent = "Not authenticated – please log in again.";
+        return;
+      }
+      var url = API_BASE + "/api/deeds/template?token=" + encodeURIComponent(authToken);
+      window.open(url, "_blank");
+    }
+
+    function uploadMetadataTemplate() {
+      var statusEl = $("metaStatus");
+      statusEl.textContent = "";
+
+      if (!authToken) {
+        statusEl.textContent = "Not authenticated – please log in again.";
+        return;
+      }
+
+      var input = $("metaFileInput");
+      var file = input.files[0];
+      if (!file) {
+        statusEl.textContent = "Select an .xlsx file first.";
+        return;
+      }
+
+      var formData = new FormData();
+      formData.append("file", file);
+
+      fetch(API_BASE + "/api/deeds/metadata", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + authToken
+        },
+        credentials: "include",
+        body: formData
+      })
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          statusEl.textContent =
+            (result.data && result.data.error) ? result.data.error : "Metadata upload failed";
+          return;
+        }
+        var msg = result.data.message || "Metadata updated.";
+        if (result.data.notFound && result.data.notFound.length > 0) {
+          msg += " Not found: " + result.data.notFound.join(", ");
+        }
+        statusEl.textContent = msg;
+        input.value = "";
+      })
+      .catch(function(err) {
+        console.error(err);
+        statusEl.textContent = "Network error during metadata upload.";
+      });
     }
 
     function clearAttemptForm() {
@@ -528,38 +604,38 @@
         headers: { "Authorization": "Bearer " + authToken },
         credentials: "include"
       })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
-        })
-        .then(function (result) {
-          if (!result.ok) {
-            viewer.textContent =
-              (result.data && result.data.error) ? result.data.error : "No more deeds available.";
-            hint.textContent = viewer.textContent;
-            currentDeedId = null;
-            return;
-          }
-
-          var deed = result.data.deed;
-          currentDeedId = deed.id;
-
-          clearAttemptForm();
-
-          viewer.textContent = "PDF ready. Use the link below to open it in a new tab.";
-          hint.textContent =
-            "Showing Deed ID " +
-            deed.id +
-            (deed.filename ? " (" + deed.filename + ")" : "");
-
-          loadPDFForCurrentDeed();
-        })
-        .catch(function (err) {
-          console.error(err);
-          viewer.textContent = "Network error while fetching next deed.";
-          hint.textContent = "Network error while fetching next deed.";
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
         });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          viewer.textContent =
+            (result.data && result.data.error) ? result.data.error : "No more deeds available.";
+          hint.textContent = viewer.textContent;
+          currentDeedId = null;
+          return;
+        }
+
+        var deed = result.data.deed;
+        currentDeedId = deed.id;
+
+        clearAttemptForm();
+
+        viewer.textContent = "PDF ready. Use the link below to open it in a new tab.";
+        hint.textContent =
+          "Showing Deed ID " +
+          deed.id +
+          (deed.filename ? " (" + deed.filename + ")" : "");
+
+        loadPDFForCurrentDeed();
+      })
+      .catch(function(err) {
+        console.error(err);
+        viewer.textContent = "Network error while fetching next deed.";
+        hint.textContent = "Network error while fetching next deed.";
+      });
     }
 
     function loadPDFForCurrentDeed() {
@@ -574,39 +650,42 @@
         return;
       }
 
-      var pdfUrl =
-        API_BASE +
-        "/api/deeds/" +
-        currentDeedId +
-        "/file?token=" +
-        encodeURIComponent(authToken);
+      var pdfUrl = API_BASE + "/api/deeds/" + currentDeedId + "/file";
 
-      fetch(pdfUrl, { method: "GET" })
-        .then(function (res) {
-          if (!res.ok) {
-            viewer.textContent = "Could not load PDF (HTTP " + res.status + ").";
-            hint.textContent =
-              "Could not load PDF (HTTP " + res.status + "). URL: " + pdfUrl;
-            if (linkRow) linkRow.style.display = "none";
-            return;
-          }
-
-          viewer.textContent =
-            "PDF is ready. Use the link below to open it in a new tab.";
+      fetch(pdfUrl, {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + authToken },
+        credentials: "include"
+      })
+      .then(function(res) {
+        if (!res.ok) {
+          viewer.textContent = "Could not load PDF (HTTP " + res.status + ").";
           hint.textContent =
-            "Showing Deed ID " + currentDeedId + " PDF (new tab link below).";
-
-          if (linkRow && linkEl) {
-            linkEl.href = pdfUrl;
-            linkRow.style.display = "inline";
-          }
-        })
-        .catch(function (err) {
-          console.error(err);
-          viewer.textContent = "Network error while loading PDF.";
-          hint.textContent = "Network error while loading PDF.";
+            "Could not load PDF (HTTP " + res.status + ").";
           if (linkRow) linkRow.style.display = "none";
-        });
+          return;
+        }
+        return res.blob();
+      })
+      .then(function(blob) {
+        if (!blob) return;
+        var url = URL.createObjectURL(blob);
+        viewer.textContent =
+          "PDF is ready. Use the link below to open it in a new tab.";
+        hint.textContent =
+          "Showing Deed ID " + currentDeedId + " PDF (new tab link below).";
+
+        if (linkRow && linkEl) {
+          linkEl.href = url;
+          linkRow.style.display = "inline";
+        }
+      })
+      .catch(function(err) {
+        console.error(err);
+        viewer.textContent = "Network error while loading PDF.";
+        hint.textContent = "Network error while loading PDF.";
+        if (linkRow) linkRow.style.display = "none";
+      });
     }
 
     function submitSimpleAttempt() {
@@ -649,44 +728,43 @@
         credentials: "include",
         body: JSON.stringify(body)
       })
-        .then(function (res) {
-          return res.json().then(function (data) {
-            return { ok: res.ok, data: data };
-          });
-        })
-        .then(function (result) {
-          if (!result.ok) {
-            statusEl.textContent =
-              (result.data && result.data.error) ? result.data.error : "Failed to save attempt";
-            return;
-          }
-
-          var score =
-            (result.data && typeof result.data.score === "number")
-              ? result.data.score
-              : (result.data.attempt && result.data.attempt.total_score);
-          var fb =
-            (result.data && result.data.feedback) ||
-            (result.data.attempt && result.data.attempt.feedback) ||
-            "";
-
-          var msg = "";
-          if (typeof score === "number") {
-            msg += "Score: " + score + "/100. ";
-          }
-          if (fb) {
-            msg += fb;
-          } else {
-            msg += "Attempt saved. Loading next deed...";
-          }
-          statusEl.textContent = msg;
-
-          getNextDeed();
-        })
-        .catch(function (err) {
-          console.error(err);
-          statusEl.textContent = "Network error";
+      .then(function(res) {
+        return res.json().then(function(data) {
+          return { ok: res.ok, data: data };
         });
+      })
+      .then(function(result) {
+        if (!result.ok) {
+          statusEl.textContent =
+            (result.data && result.data.error) ? result.data.error : "Failed to save attempt";
+          return;
+        }
+
+        var score = (result.data && typeof result.data.score === "number")
+          ? result.data.score
+          : (result.data.attempt && result.data.attempt.total_score);
+        var fb =
+          (result.data && result.data.feedback) ||
+          (result.data.attempt && result.data.attempt.feedback) ||
+          "";
+
+        var msg = "";
+        if (typeof score === "number") {
+          msg += "Score: " + score + "/100. ";
+        }
+        if (fb) {
+          msg += fb;
+        } else {
+          msg += "Attempt saved. Loading next deed...";
+        }
+        statusEl.textContent = msg;
+
+        getNextDeed();
+      })
+      .catch(function(err) {
+        console.error(err);
+        statusEl.textContent = "Network error";
+      });
     }
 
     (function init() {
