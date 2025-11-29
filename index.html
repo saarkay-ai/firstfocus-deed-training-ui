@@ -27,6 +27,190 @@
       max-width: 1100px;
       margin: 20px auto;
       padding: 0 12px;
+      <!-- ====== ADMIN / TRAINER DASHBOARD (insert inside .wrap) ====== -->
+<div id="adminDashboardCard" class="card" style="display:none; margin-top:12px;">
+  <h2>Admin / Trainer Dashboard</h2>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 8px 0;">
+    <div style="background:#fff;padding:10px;border-radius:8px;min-width:140px;box-shadow:0 4px 8px rgba(0,0,0,0.04);">
+      <div class="muted">Total Attempts</div>
+      <strong id="statTotalAttempts">0</strong>
+    </div>
+    <div style="background:#fff;padding:10px;border-radius:8px;min-width:140px;box-shadow:0 4px 8px rgba(0,0,0,0.04);">
+      <div class="muted">Avg Score</div>
+      <strong id="statAvgScore">0%</strong>
+    </div>
+    <div style="background:#fff;padding:10px;border-radius:8px;min-width:140px;box-shadow:0 4px 8px rgba(0,0,0,0.04);">
+      <div class="muted">Best Score</div>
+      <strong id="statBestScore">0</strong>
+    </div>
+    <div style="background:#fff;padding:10px;border-radius:8px;min-width:140px;box-shadow:0 4px 8px rgba(0,0,0,0.04);">
+      <div class="muted">Users</div>
+      <strong id="statUsers">0</strong>
+    </div>
+    <div style="background:#fff;padding:10px;border-radius:8px;min-width:140px;box-shadow:0 4px 8px rgba(0,0,0,0.04);">
+      <div class="muted">Deeds w/ PDF</div>
+      <strong id="statDeedsPdf">0</strong>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+    <label style="margin:0 6px 0 0">Filter by Trainee</label>
+    <select id="filterTrainee" style="padding:8px;border-radius:8px;border:1px solid #d1d5db">
+      <option value="">-- All trainees --</option>
+    </select>
+    <button onclick="refreshAttempts()" style="margin-left:6px;">Refresh</button>
+    <button onclick="exportAttempts()" style="margin-left:6px;">Export CSV</button>
+  </div>
+
+  <div>
+    <h3 style="margin:8px 0">Recent Attempts</h3>
+    <div style="overflow:auto;max-height:380px;border-radius:8px;">
+      <table id="attemptsTable" style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left;background:#f8fafc;">
+            <th style="padding:8px;border-bottom:1px solid #e5e7eb">Attempt</th>
+            <th style="padding:8px;border-bottom:1px solid #e5e7eb">Trainee</th>
+            <th style="padding:8px;border-bottom:1px solid #e5e7eb">Deed</th>
+            <th style="padding:8px;border-bottom:1px solid #e5e7eb">Score</th>
+            <th style="padding:8px;border-bottom:1px solid #e5e7eb">Time(s)</th>
+            <th style="padding:8px;border-bottom:1px solid #e5e7eb">Feedback</th>
+            <th style="padding:8px;border-bottom:1px solid #e5e7eb">Date</th>
+          </tr>
+        </thead>
+        <tbody id="attemptsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ====== DASHBOARD JS - paste near the end of body AFTER your existing script block ====== -->
+<script>
+(function(){
+  if (typeof API_BASE === 'undefined') window.API_BASE = '';
+  if (typeof authToken === 'undefined') window.authToken = localStorage.getItem('authToken') || null;
+  if (typeof currentUser === 'undefined' && localStorage.getItem('currentUser')) {
+    try { window.currentUser = JSON.parse(localStorage.getItem('currentUser')); } catch(e){ window.currentUser = null; }
+  }
+
+  window.maybeShowAdminDashboard = function(){
+    const el = document.getElementById('adminDashboardCard');
+    if(!el) return;
+    if(!window.currentUser || !window.authToken) {
+      el.style.display = 'none';
+      return;
+    }
+    if (['admin','trainer'].includes(window.currentUser.role)) {
+      el.style.display = 'block';
+      loadDashboardStats();
+      loadTraineeFilter();
+      refreshAttempts();
+    } else {
+      el.style.display = 'none';
+    }
+  };
+
+  window.loadDashboardStats = async function(){
+    try {
+      const res = await fetch((API_BASE || '') + '/api/dashboard/stats', {
+        headers: { 'Authorization': 'Bearer ' + (window.authToken || '') },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (!res.ok) { console.error('dashboard/stats error', data); return; }
+      document.getElementById('statTotalAttempts').textContent = data.totalAttempts ?? 0;
+      document.getElementById('statAvgScore').textContent = (data.avgScore ?? 0) + '%';
+      document.getElementById('statBestScore').textContent = data.bestScore ?? 0;
+      document.getElementById('statUsers').textContent = data.totalUsers ?? 0;
+      document.getElementById('statDeedsPdf').textContent = data.deedsWithPdf ?? 0;
+    } catch (err) { console.error('loadDashboardStats err', err); }
+  };
+
+  window.loadTraineeFilter = async function(){
+    try {
+      const res = await fetch((API_BASE || '') + '/api/dashboard/users', {
+        headers: { 'Authorization': 'Bearer ' + (window.authToken || '') },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (!res.ok) { console.error('dashboard/users error', data); return; }
+      const sel = document.getElementById('filterTrainee');
+      sel.innerHTML = '<option value="">-- All trainees --</option>';
+      (data.users || []).forEach(u => {
+        if (u.role === 'trainee') {
+          const opt = document.createElement('option');
+          opt.value = u.id;
+          opt.textContent = u.username + ' (id:' + u.id + ')';
+          sel.appendChild(opt);
+        }
+      });
+    } catch (err) { console.error('loadTraineeFilter err', err); }
+  };
+
+  window.refreshAttempts = async function(){
+    try {
+      const sel = document.getElementById('filterTrainee');
+      const userId = sel ? sel.value : '';
+      let url = (API_BASE || '') + '/api/dashboard/attempts';
+      if (userId) url += '?userId=' + encodeURIComponent(userId);
+      const res = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + (window.authToken || '') },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (!res.ok) { console.error('dashboard/attempts error', data); return; }
+      const tbody = document.getElementById('attemptsBody');
+      tbody.innerHTML = '';
+      (data.attempts || []).forEach(a => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #eef2ff';
+        tr.innerHTML = `
+          <td style="padding:8px">${a.id}</td>
+          <td style="padding:8px">${a.username ? a.username : ''} (id:${a.user_id})</td>
+          <td style="padding:8px">${a.deed_id} ${a.filename ? '('+a.filename+')' : ''}</td>
+          <td style="padding:8px">${a.total_score ?? ''}</td>
+          <td style="padding:8px">${a.time_taken_seconds ?? ''}</td>
+          <td style="padding:8px;max-width:240px;white-space:pre-wrap;word-break:break-word">${a.feedback ? a.feedback : ''}</td>
+          <td style="padding:8px">${a.created_at ? (new Date(a.created_at)).toLocaleString() : ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) { console.error('refreshAttempts err', err); }
+  };
+
+  window.exportAttempts = function(){
+    const sel = document.getElementById('filterTrainee');
+    const userId = sel ? sel.value : '';
+    let url = (API_BASE || '') + '/api/dashboard/export';
+    if (userId) url += '?userId=' + encodeURIComponent(userId);
+    const token = window.authToken || '';
+    fetch(url, { headers: { 'Authorization': 'Bearer ' + token }, credentials: 'include' })
+      .then(r => {
+        if (!r.ok) throw new Error('Export failed');
+        return r.blob();
+      })
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = 'attempts-export.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+      })
+      .catch(err => { console.error('exportAttempts err', err); alert('Export failed'); });
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    try { maybeShowAdminDashboard(); } catch(e) {}
+  });
+
+  window._dashboard = {
+    loadDashboardStats, loadTraineeFilter, refreshAttempts, exportAttempts, maybeShowAdminDashboard
+  };
+})();
+</script>
     }
     .card {
       background: white;
